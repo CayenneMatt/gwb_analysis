@@ -1,2 +1,1 @@
-# Be responsible
-# New text
+# A library for all your GWB analysis needs
