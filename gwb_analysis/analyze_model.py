@@ -26,7 +26,7 @@ class Model_Info(object):
     Read the model data and store relevant features as attributes.
     """
     # Attributes
-    def __init__(self, path, file, model_name, color, line_style, threshold, evolving=False, stdev=None, nfreq=5, param_space_name = 'PS_Astro_Strong_All'):
+    def __init__(self, path, file, model_name, color, line_style, threshold, evolving=False, stdev=None, nfreq=5, param_space_name = 'PS_Astro_Strong_All_Evolving'):
 
         self.path = path  # Path to data
         self.file = file  # Filename
