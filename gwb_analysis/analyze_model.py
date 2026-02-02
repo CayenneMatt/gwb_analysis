@@ -1,4 +1,4 @@
-# Class to aid in model analysis
+# Class to aid in GWB model analysis
 import numpy as np
 import scipy.stats as stats
 
