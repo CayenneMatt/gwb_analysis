@@ -3,7 +3,7 @@ import numpy as np
 import scipy.stats as stats
 
 import holodeck as holo
-import holodeck.sams as sams
+from holodeck.sams import sam as sams
 from holodeck.constants import MSOL
 from holodeck import librarian
 
