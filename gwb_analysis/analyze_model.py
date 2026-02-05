@@ -13,11 +13,7 @@ import matplotlib.pyplot as plt
 
 import copy
 
-
 """
-TODO:
-
-* Spectrum plotter method
 
 """
 

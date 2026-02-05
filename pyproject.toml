@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gwb_analysis"
+version = "0.1.0"
+description = "Package for reading and analyzing GWB models from holodeck."
+authors = [
+    { name = "CayenneMatt", email = "cayenne@umich.com" }
+]
+readme = "README.md"
+license = { text = "" } # adjust if you use a different license
+requires-python = ">=3.10"           # set the minimum Python version you support
+
+# -------------------------------------------------
+# Copy the packages you would otherwise put in requirements.txt 
+dependencies = [
+#    "numpy",
+#    "astropy",
+#    "scipy",
+#    "matplotlib",
+#    "holodeck",
+#    "kalepy"
+]
+
+# -------------------------------------------------
+# Optional: Development‑only dependencies (e.g., testing, linting)
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+# -------------------------------------------------
+# Tell setuptools where the source lives
+[tool.setuptools.packages.find]
+where = ["gwb_analysis"]       # where the main source code lives
