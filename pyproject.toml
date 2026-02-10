@@ -32,4 +32,4 @@ dev = ["pytest>=7.0"]
 # -------------------------------------------------
 # Tell setuptools where the source lives
 [tool.setuptools.packages.find]
-where = ["gwb_analysis"]       # where the main source code lives
+where = ["."]       # where the main source code lives

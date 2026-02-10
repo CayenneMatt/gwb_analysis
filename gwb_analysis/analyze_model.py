@@ -221,6 +221,7 @@ class Model_Info(object):
                                                                 zplaw_slope=self.posteriors['mmb_zplaw_slope'],
                                                                 zplaw_scatter=self.posteriors['mmb_zplaw_scatter'],
                                                                 scatter_dex = self.posteriors['mmb_scatter_dex'])
+
             
         if fiducial:
             log10_phi1 = [self.fiducial_values['gsmf_log10_phi_one_z0'], self.fiducial_values['gsmf_log10_phi_one_z1'], self.fiducial_values['gsmf_log10_phi_one_z2']]
