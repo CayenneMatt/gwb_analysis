@@ -307,6 +307,14 @@ class Model_Info(object):
         --------------
 
         Returns: radiative efficiency between the two redshifts
+
+        --------------
+
+        Issues:
+
+        * Answer depends on size of redshift bins!
+        * Integration only cosiders two bins and nothing in between, but should be fine for order of magnitude calculation
+
         """
         # Get BHMF at each redshift
         volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
