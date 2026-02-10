@@ -263,7 +263,7 @@ class Model_Info(object):
         return masses, gsmf.mbh_mass_func_conv(10**masses * MSOL, redz, mmbulge=mmb, scatter=True), None
     
 
-    def get_shenf( redshift, path_to_shen_fits='/Users/cayenne/Documents/Research/quasarlf/qlffits/'):
+    def get_shenf(redshift, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
         Retrieve the fit to the Shen+2020 bolometric luminosity function at a given redshift.
         
@@ -279,7 +279,7 @@ class Model_Info(object):
         dat = np.genfromtxt(path_to_shen_fits+"bolometric_fit_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
 
-    def get_shend(redshift, path_to_shen_data='/Users/cayenne/Documents/Research/quasarlf/qlffits/'):
+    def get_shend(redshift, path_to_shen_data="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
         Retrieve the data from the Shen+2020 bolometric luminosity function at a given redshift.
 
@@ -294,7 +294,7 @@ class Model_Info(object):
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
 
-    def calulate_radiative_efficiency(self, z1, z2, fiducial=False, path_to_shen_fits='/Users/cayenne/Documents/Research/quasarlf/qlffits/'):
+    def calulate_radiative_efficiency(self, z1, z2, fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
         Calculate the radiative efficiency implied by the model between two redshifts. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation to get the BHMF at each redshift, then convolving the difference in BHMF with the difference in LF from Shen+2020 to get the luminosity density, and then calculating the radiative efficiency as (Luminosity Density * dt) / (mdot * c^2)
 
@@ -321,11 +321,11 @@ class Model_Info(object):
         mdot = trapz((bhmf1 - bhmf2) * 10**mass, mass) * u.Msun / u.Mpc**3 * volume
 
         # AFN LF
-        shen_fit1 = get_shenf(path_to_shen_fits, z1)
+        shen_fit1 = get_shenf(z1, path_to_shen_fits)
         phiL1 = 10**(shen_fit1[1])
         logL = shen_fit1[0]
 
-        shen_fit2 = get_shenf(path_to_shen_fits, z2)
+        shen_fit2 = get_shenf(z2, path_to_shen_fits)
         phiL2 = 10**(shen_fit2[1])
 
         Lum = trapz((phiL1 - phiL2) * 10**logL, logL) * u.erg / u.s / u.Mpc**3 * volume
