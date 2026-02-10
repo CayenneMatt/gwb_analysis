@@ -10,6 +10,11 @@ from holodeck import librarian
 import kalepy as kale
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from astropy.cosmology import WMAP9 as cosmo
+from numpy import trapz
+import astropy.units as u
+import astropy.constants as c
+
 
 import copy
 
@@ -195,6 +200,20 @@ class Model_Info(object):
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
     
+    def add_spectrum(self, ax, errorbars=False, label=None):
+        if not label:
+            label = self.model_name
+        vals = np.sum(self.ln_like[:, :self.nfreq], axis=-1)
+        sim_idx = np.argmax(vals)
+        gwb = np.median(self.gwb, axis=2)
+        ax.plot(np.log10(self.freqs), gwb[sim_idx], lw=3, ls=self.line_style, c=self.color, label=label)
+        if errorbars:
+            valid = np.where((vals >= (np.nanmax(vals)- self.threshold)))[0]
+            up = np.max(gwb[valid], axis=0)
+            dn = np.min(gwb[valid], axis=0)
+            ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
+
+        
     def bhmf(self, mass, redz, fiducial=False):
         """
         Produces the black hole mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
@@ -215,13 +234,15 @@ class Model_Info(object):
             alpha2 = self.posteriors['gsmf_alpha_two']
             
             gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+            
+            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
+                
             mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.posteriors['mmb_mamp_log10'],
-                                                                mplaw = self.posteriors['mmb_plaw'],
-                                                                zplaw_amp=self.posteriors['mmb_zplaw_amp'],
-                                                                zplaw_slope=self.posteriors['mmb_zplaw_slope'],
-                                                                zplaw_scatter=self.posteriors['mmb_zplaw_scatter'],
-                                                                scatter_dex = self.posteriors['mmb_scatter_dex'])
-
+                                                                    mplaw = self.posteriors['mmb_plaw'],
+                                                                    zplaw_amp=zplaw_amp,
+                                                                    zplaw_slope=self.posteriors['mmb_zplaw_slope'],
+                                                                    zplaw_scatter=self.posteriors['mmb_zplaw_scatter'],
+                                                                    scatter_dex = self.posteriors['mmb_scatter_dex'])
             
         if fiducial:
             log10_phi1 = [self.fiducial_values['gsmf_log10_phi_one_z0'], self.fiducial_values['gsmf_log10_phi_one_z1'], self.fiducial_values['gsmf_log10_phi_one_z2']]
@@ -231,6 +252,7 @@ class Model_Info(object):
             alpha2 = self.fiducial_values['gsmf_alpha_two']
             
             gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+            
             mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.fiducial_values['mmb_mamp_log10'],
                                                                 mplaw = self.fiducial_values['mmb_plaw'],
                                                                 zplaw_amp=self.fiducial_values['mmb_zplaw_amp'],
@@ -240,17 +262,77 @@ class Model_Info(object):
         
         return masses, gsmf.mbh_mass_func_conv(10**masses * MSOL, redz, mmbulge=mmb, scatter=True), None
     
-    def add_spectrum(self, ax, errorbars=False, label=None):
-        if not label:
-            label = self.model_name
-        vals = np.sum(self.ln_like[:, :self.nfreq], axis=-1)
-        sim_idx = np.argmax(vals)
-        gwb = np.median(self.gwb, axis=2)
-        ax.plot(np.log10(self.freqs), gwb[sim_idx], lw=3, ls=self.line_style, c=self.color, label=label)
-        if errorbars:
-            valid = np.where((vals >= (np.nanmax(vals)- self.threshold)))[0]
-            up = np.max(gwb[valid], axis=0)
-            dn = np.min(gwb[valid], axis=0)
-            ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
 
+    def get_shenf( redshift, path_to_shen_fits='/Users/cayenne/Documents/Research/quasarlf/qlffits/'):
+        """
+        Retrieve the fit to the Shen+2020 bolometric luminosity function at a given redshift.
+        
+        Arguments:     
+        redshift: redshift of the fit to be used 0.2-7.0 in steps of 0.2
+        path_to_shen_fits = '/Users/cayenne/Documents/Research/quasarlf/qlffits/': Path to the Shen+2020 fits for the bolometric LF at different redshifts
+
+        --------------
+
+        Returns: x (logL), y (log phiL)
+
+        """
+        dat = np.genfromtxt(path_to_shen_fits+"bolometric_fit_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
+        return dat['x'], dat['y']
+
+    def get_shend(redshift, path_to_shen_data='/Users/cayenne/Documents/Research/quasarlf/qlffits/'):
+        """
+        Retrieve the data from the Shen+2020 bolometric luminosity function at a given redshift.
+
+        Arguments:
+        redshift: redshift of the data to be used 0.2-7.0 in steps of 0.2
+        path_to_shen_data = '/Users/cayenne/Documents/Research/quasarlf/qlffits/': Path to the Shen+2020 data for the bolometric LF at different redshifts
+
+        --------------
+
+        Returns: x (logL), y (log phiL)
+        """
+        dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
+        return dat['x'], dat['y']
+
+    def calulate_radiative_efficiency(self, z1, z2, fiducial=False, path_to_shen_fits='/Users/cayenne/Documents/Research/quasarlf/qlffits/'):
+        """
+        Calculate the radiative efficiency implied by the model between two redshifts. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation to get the BHMF at each redshift, then convolving the difference in BHMF with the difference in LF from Shen+2020 to get the luminosity density, and then calculating the radiative efficiency as (Luminosity Density * dt) / (mdot * c^2)
+
+        Arguments:
+        z1: lower redshift
+        z2: higher redshift
+        fiducial: whether to use the fiducial values of the model parameters instead of the posteriors
+        path_to_shen_fits = '/Users/cayenne/Documents/Research/quasarlf/qlffits/': path to the Shen+2020 fits for the bolometric LF at different redshifts
+
+        --------------
+
+        Returns: radiative efficiency between the two redshifts
+        """
+        # Get BHMF at each redshift
+        volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
+
+        dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
+
+        # BHMF
+        mass, bhmf1, a = self.bhmf([5, 13, 100], redz=z1, fiducial=fiducial)
+        mass, bhmf2, a = self.bhmf([5, 13, 100], redz=z2, fiducial=fiducial)
+        
+
+        mdot = trapz((bhmf1 - bhmf2) * 10**mass, mass) * u.Msun / u.Mpc**3 * volume
+
+        # AFN LF
+        shen_fit1 = get_shenf(path_to_shen_fits, z1)
+        phiL1 = 10**(shen_fit1[1])
+        logL = shen_fit1[0]
+
+        shen_fit2 = get_shenf(path_to_shen_fits, z2)
+        phiL2 = 10**(shen_fit2[1])
+
+        Lum = trapz((phiL1 - phiL2) * 10**logL, logL) * u.erg / u.s / u.Mpc**3 * volume
+
+        # Radiative Efficiency Calculation
+
+        erad = Lum * dt / (mdot * c.c**2)
+
+        return erad.decompose()
 
