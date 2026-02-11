@@ -19,7 +19,8 @@ import astropy.constants as c
 import copy
 
 """
-
+TODO:
+* Add Unit tests to make sure this works beyond visual comparison
 """
 
 class Model_Info(object):
