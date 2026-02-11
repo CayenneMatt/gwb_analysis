@@ -10,7 +10,7 @@ authors = [
     { name = "CayenneMatt", email = "cayenne@umich.com" }
 ]
 readme = "README.md"
-license = { text = "" } # adjust if you use a different license
+license = { file = "LICENSE" } # adjust if you use a different license
 requires-python = ">=3.10"           # set the minimum Python version you support
 
 # -------------------------------------------------
