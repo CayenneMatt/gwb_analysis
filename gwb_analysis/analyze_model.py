@@ -384,7 +384,9 @@ class Model_Info(object):
 
     def calulate_radiative_efficiency(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
-        Calculate the radiative efficiency implied by the model between two redshifts. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation to get the BHMF at each redshift, then convolving the difference in BHMF with the difference in LF from Shen+2020 to get the luminosity density, and then calculating the radiative efficiency as (Luminosity Density * dt) / (mdot * c^2)
+        Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the
+        luminosity function at the average redshift. This is a rough calculation that assumes that the change in the BHMF and LF between the two redshifts is solely due to accretion
+        and does not consider mergers or other processes that may contribute to the growth of black holes.
 
         Arguments:
         z1: lower redshift
@@ -400,16 +402,19 @@ class Model_Info(object):
 
         Issues:
 
+        * Incorporate AGN Fraction
+        * Radiative efficiency may be mass and redshift dependent, not currently implemented
         * Need to make sure that it is always integrating over roughly similar mass - luminosity ranges
         * Integration only cosiders two bins and nothing in between, but should be fine for order of magnitude calculation
 
         """
+        f_obsc = 1/3  # Fraction of AGN that are not obscured and therefore observed in the LF
+        f_acc = 0.9  # Fraction of BH growth due to accretion as opposed to mergers
         # Get BHMF at each redshift
         mflag = 1
-        lflag = 1
         # volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
 
-        z1 = zval - step
+        z1 = zval
         z2 = zval + step
 
         dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
@@ -418,10 +423,10 @@ class Model_Info(object):
         masses, bhmf1 = self.bhmf(mass, redz=z1, fiducial=fiducial)
         masses, bhmf2 = self.bhmf(mass, redz=z2, fiducial=fiducial)
         
-        mdot = trapz((bhmf1 - bhmf2) * 10**masses, masses) * u.Msun / dt #/ u.Mpc**3 * volume
+        mdot = trapz((bhmf1 - bhmf2) * 10**masses, masses) * u.Msun / dt * f_obsc / f_acc#/ u.Mpc**3 * volume
 
         if mdot < 0:
-            mflag = -1
+            print('Warning: Negative mass accreted between z = {} and z = {} for model {}.'.format(np.round(z1, 2), np.round(z2, 2), self.model_name))
 
         # Luminosity Function
 
@@ -431,11 +436,11 @@ class Model_Info(object):
 
 
         Lum = trapz((phiL) * 10**logL, logL) * u.erg / u.s #/ u.Mpc**3 * volume
-        if Lum < 0:
-            lflag = -2
+
         # Radiative Efficiency Calculation
 
         erad = Lum / (mdot * c.c**2)
+        # erad = mdot
 
-        return erad.decompose(), mflag, lflag
+        return erad.decompose(), mflag
 
