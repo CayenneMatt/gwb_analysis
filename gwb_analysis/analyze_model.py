@@ -411,7 +411,6 @@ class Model_Info(object):
         f_obsc = 1/3  # Fraction of AGN that are not obscured and therefore observed in the LF
         f_acc = 0.9  # Fraction of BH growth due to accretion as opposed to mergers
         # Get BHMF at each redshift
-        mflag = 1
         # volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
 
         z1 = zval
@@ -434,7 +433,6 @@ class Model_Info(object):
         phiL = 10**(shen_fit[1])
         logL = shen_fit[0]
 
-
         Lum = trapz((phiL) * 10**logL, logL) * u.erg / u.s #/ u.Mpc**3 * volume
 
         # Radiative Efficiency Calculation
@@ -442,5 +440,29 @@ class Model_Info(object):
         erad = Lum / (mdot * c.c**2)
         # erad = mdot
 
-        return erad.decompose(), mflag
+        return erad.decompose()
+
+
+    def fit_AGN_Luminosity(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+        """
+        Calculate the AGN luminosity implied by the model at a given redshift, assume erad = f_obsc = f_acc = 1 so that they can be fit for.
+        """
+        # Get BHMF at each redshift
+
+        z1 = zval
+        z2 = zval + step
+
+        dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
+        volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
+
+        # Mass Function
+        masses, bhmf1 = self.bhmf(mass, redz=z1, fiducial=fiducial)
+        masses, bhmf2 = self.bhmf(mass, redz=z2, fiducial=fiducial)
+        
+        mdot = (trapz((bhmf1 - bhmf2) * 10**masses, masses) * u.Msun / dt)
+
+        # Luminosity Calculation
+        Lum = (mdot * c.c**2).decompose().to(u.erg / u.s).value
+
+        return Lum
 
