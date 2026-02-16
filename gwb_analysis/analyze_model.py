@@ -15,7 +15,6 @@ from numpy import trapz
 import astropy.units as u
 import astropy.constants as c
 
-
 import copy
 
 """
@@ -57,9 +56,48 @@ class Model_Info(object):
             self.idcs = id
         
         # Dictionary of priors to be modified by get_posteriors(), note that LM* models have different priors, but currently sample every parameter.
-        space_class = librarian.param_spaces_dict[self.param_space_name]
-        self.fiducial_values = copy.deepcopy(space_class.DEFAULTS)
-        self.posteriors = copy.deepcopy(space_class.DEFAULTS)
+        self.space_class = librarian.param_spaces_dict[self.param_space_name]
+        self.fiducial_values = copy.deepcopy(self.space_class.DEFAULTS)
+        self.posteriors = copy.deepcopy(self.space_class.DEFAULTS)
+        # self.posteriors_err = {k: np.abs(self.space_class.DEFAULTS[k]*0.1) for k in self.space_class.DEFAULTS}
+
+        self.posteriors_err = {'hard_time': 3,
+                               'hard_sepa_init': 5,
+                                'hard_rchar': 3.0,
+                                'hard_gamma_outer': 0.5,
+                                'hard_gamma_inner': 0.5,
+                                'gsmf_log10_phi_one_z0': 0.028,
+                                'gsmf_log10_phi_one_z1': 0.072,
+                                'gsmf_log10_phi_one_z2': 0.031,
+                                'gsmf_log10_phi_two_z0': 0.050,
+                                'gsmf_log10_phi_two_z1': 0.070,
+                                'gsmf_log10_phi_two_z2': 0.020,
+                                'gsmf_log10_mstar_z0': 0.026,
+                                'gsmf_log10_mstar_z1': 0.045,
+                                'gsmf_log10_mstar_z2': 0.015,
+                                'gsmf_alpha_one': 0.070,
+                                'gsmf_alpha_two': 0.150,
+                                'gmr_norm0_log10': 0.0045,
+                                'gmr_normz': 0.0128,
+                                'gmr_malpha0': 0.00338,
+                                'gmr_malphaz': 0.0316,
+                                'gmr_mdelta0': 0.0202,
+                                'gmr_mdeltaz': 0.0440,
+                                'gmr_qgamma0': 0.0026,
+                                'gmr_qgammaz': 0.0021,
+                                'gmr_qgammam': 0.0013,
+                                'mmb_mamp_log10': 0.05,
+                                'mmb_plaw': 0.08,
+                                'mmb_scatter_dex': 0.05,
+                                'mmb_zplaw_amp': 0.0,
+                                'mmb_zplaw_slope': 0.0,
+                                'mmb_zplaw_scatter': 0.0,
+                                'bf_frac_lo': 0.4,
+                                'bf_frac_hi': 1.0,
+                                'bf_mstar_crit': 0.5,
+                                'bf_width_dex': 0.1}
+
+
         
         # Dictionary of plot labels associated with each parameter
         self.plt_labels = {'hard_time'           : r"$\tau_\mathrm{f}$",
@@ -132,7 +170,9 @@ class Model_Info(object):
             xx = xx[valid]
             rv = stats.rv_histogram(np.histogram(xx, weights=weights_med))
             median = rv.median()
+            stdev = rv.std()
             self.posteriors[n] = median
+            self.posteriors_err[n] = stdev
 
         return self
     
@@ -201,15 +241,16 @@ class Model_Info(object):
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
     
-    def add_spectrum(self, ax, errorbars=False, label=None):
+    def add_spectrum(self, ax, lw=3, errorbars=False, label=None):
         if not label:
             label = self.model_name
         vals = np.sum(self.ln_like[:, :self.nfreq], axis=-1)
         sim_idx = np.argmax(vals)
         gwb = np.median(self.gwb, axis=2)
-        ax.plot(np.log10(self.freqs), gwb[sim_idx], lw=3, ls=self.line_style, c=self.color, label=label)
+        ax.plot(np.log10(self.freqs), gwb[sim_idx], lw=lw, ls=self.line_style, c=self.color, label=label)
         if errorbars:
             valid = np.where((vals >= (np.nanmax(vals)- self.threshold)))[0]
+            print(len(valid) / len(vals))
             up = np.max(gwb[valid], axis=0)
             dn = np.min(gwb[valid], axis=0)
             ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
@@ -223,7 +264,7 @@ class Model_Info(object):
         mass: tuple (min, max, npoints) in log10(Mbh/Msol) to be used as arguments in np.linspace()
         redz: redshift
         -----------
-        Returns: (bhmf, None) where bhmf is the black hole mass function at the given redshift
+        Returns: (masses, bhmf, None) where bhmf is the black hole mass function at the given redshift
         """
         masses = np.linspace(mass[0], mass[1], mass[2])
 
@@ -261,7 +302,53 @@ class Model_Info(object):
                                                                 zplaw_scatter=self.fiducial_values['mmb_zplaw_scatter'],
                                                                 scatter_dex = self.fiducial_values['mmb_scatter_dex'])
         
-        return masses, gsmf.mbh_mass_func_conv(10**masses * MSOL, redz, mmbulge=mmb, scatter=True), None
+        return masses, gsmf.mbh_mass_func_conv(10**masses * MSOL, redz, mmbulge=mmb, scatter=True)
+    
+    def bhmf_err(self, mass, redz, ndraws=100):
+        """
+        Produces the black hole mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
+
+        Arguments:
+        mass: tuple (min, max, npoints) in log10(Mbh/Msol) to be used as arguments in np.linspace()
+        redz: redshift
+        -----------
+        Returns: (masses, bhmf_median, bhmf_upper_bound, bhmf_lower_bound) where bhmf is the black hole mass function at the given redshift
+
+        ------------
+        TODO:
+        * Add fiducial functionality
+        """
+        masses = np.linspace(mass[0], mass[1], mass[2])
+        
+        self.bhmf_dict = copy.deepcopy(self.space_class.DEFAULTS)
+
+        for par in self.bhmf_dict.keys():
+            self.bhmf_dict[par] = np.array(np.random.normal(self.posteriors[par], scale=self.posteriors_err[par], size=ndraws))
+
+        phis = []
+        for j in range(ndraws):
+            log10_phi1 = [self.bhmf_dict['gsmf_log10_phi_one_z0'][j], self.bhmf_dict['gsmf_log10_phi_one_z1'][j], self.bhmf_dict['gsmf_log10_phi_one_z2'][j]]
+            log10_phi2 = [self.bhmf_dict['gsmf_log10_phi_two_z0'][j], self.bhmf_dict['gsmf_log10_phi_two_z1'][j], self.bhmf_dict['gsmf_log10_phi_two_z2'][j]]
+            log10_mstar = [self.bhmf_dict['gsmf_log10_mstar_z0'][j], self.bhmf_dict['gsmf_log10_mstar_z1'][j], self.bhmf_dict['gsmf_log10_mstar_z2'][j]]
+            alpha1 = self.bhmf_dict['gsmf_alpha_one'][j]
+            alpha2 = self.bhmf_dict['gsmf_alpha_two'][j]
+
+            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+            
+            zplaw_amp = self.bhmf_dict['mmb_zplaw'][j] if 'mmb_zplaw' in self.param_names else self.bhmf_dict['mmb_zplaw_amp'][j]
+
+            mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.bhmf_dict['mmb_mamp_log10'][j],
+                                                            mplaw = self.bhmf_dict['mmb_plaw'][j],
+                                                            zplaw_amp=zplaw_amp,
+                                                            zplaw_slope=self.bhmf_dict['mmb_zplaw_slope'][j],
+                                                            zplaw_scatter=self.bhmf_dict['mmb_zplaw_scatter'][j],
+                                                            scatter_dex = self.bhmf_dict['mmb_scatter_dex'][j])
+            
+            phis.append(gsmf.mbh_mass_func_conv(10**masses * MSOL, redz, mmbulge=mmb, scatter=True))
+
+        phi_50, phi_84, phi_16 = np.nanpercentile(phis, [50, 84, 16], axis = 0)
+        
+        return masses, phi_50, phi_84, phi_16
     
 
     def get_shenf(self, redshift, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
@@ -295,7 +382,7 @@ class Model_Info(object):
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
 
-    def calulate_radiative_efficiency(self, z1, z2, fiducial=False, verbose=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+    def calulate_radiative_efficiency(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
         Calculate the radiative efficiency implied by the model between two redshifts. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation to get the BHMF at each redshift, then convolving the difference in BHMF with the difference in LF from Shen+2020 to get the luminosity density, and then calculating the radiative efficiency as (Luminosity Density * dt) / (mdot * c^2)
 
@@ -313,38 +400,42 @@ class Model_Info(object):
 
         Issues:
 
-        * Answer depends on size of redshift bins!
+        * Need to make sure that it is always integrating over roughly similar mass - luminosity ranges
         * Integration only cosiders two bins and nothing in between, but should be fine for order of magnitude calculation
 
         """
         # Get BHMF at each redshift
-        volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
+        mflag = 1
+        lflag = 1
+        # volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
+
+        z1 = zval - step
+        z2 = zval + step
 
         dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
 
-        # BHMF
-        mass, bhmf1, a = self.bhmf([5, 13, 100], redz=z1, fiducial=fiducial)
-        mass, bhmf2, a = self.bhmf([5, 13, 100], redz=z2, fiducial=fiducial)
+        # Mass Function
+        masses, bhmf1 = self.bhmf(mass, redz=z1, fiducial=fiducial)
+        masses, bhmf2 = self.bhmf(mass, redz=z2, fiducial=fiducial)
         
-        mdot = trapz((bhmf1 - bhmf2) * 10**mass, mass) * u.Msun / u.Mpc**3 * volume
-        if mdot < 0 and verbose==True:
-            print("Warning: model {} has negative mdot between z={} and z={}".format(self.model_name, z1, z2))
+        mdot = trapz((bhmf1 - bhmf2) * 10**masses, masses) * u.Msun / dt #/ u.Mpc**3 * volume
 
-        # AFN LF
-        shen_fit1 = self.get_shenf(z1, path_to_shen_fits)
-        phiL1 = 10**(shen_fit1[1])
-        logL = shen_fit1[0]
+        if mdot < 0:
+            mflag = -1
 
-        shen_fit2 = self.get_shenf(z2, path_to_shen_fits)
-        phiL2 = 10**(shen_fit2[1])
+        # Luminosity Function
 
-        Lum = trapz((phiL1 - phiL2) * 10**logL, logL) * u.erg / u.s / u.Mpc**3 * volume
-        if Lum < 0 and verbose==True:
-            print("Warning: model {} has negative Lum between z={} and z={}".format(self.model_name, z1, z2))
+        shen_fit = self.get_shenf(zval, path_to_shen_fits)
+        phiL = 10**(shen_fit[1])
+        logL = shen_fit[0]
 
+
+        Lum = trapz((phiL) * 10**logL, logL) * u.erg / u.s #/ u.Mpc**3 * volume
+        if Lum < 0:
+            lflag = -2
         # Radiative Efficiency Calculation
 
-        erad = Lum * dt / (mdot * c.c**2)
+        erad = Lum / (mdot * c.c**2)
 
-        return erad.decompose()
+        return erad.decompose(), mflag, lflag
 
