@@ -17,6 +17,8 @@ import astropy.constants as c
 
 import copy
 
+import pytensor.tensor as pt
+
 """
 TODO:
 * Add Unit tests to make sure this works beyond visual comparison
@@ -367,13 +369,13 @@ class Model_Info(object):
         dat = np.genfromtxt(path_to_shen_fits+"bolometric_fit_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
 
-    def get_shend(self, redshift, path_to_shen_data="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+    def get_shend(self, redshift, path_to_shen_data="/Users/cayenne/Documents/Research/quasarlf/qlfdata/"):
         """
         Retrieve the data from the Shen+2020 bolometric luminosity function at a given redshift.
 
         Arguments:
         redshift: redshift of the data to be used 0.2-7.0 in steps of 0.2
-        path_to_shen_data = '/Users/cayenne/Documents/Research/quasarlf/qlffits/': Path to the Shen+2020 data for the bolometric LF at different redshifts
+        path_to_shen_data = '/Users/cayenne/Documents/Research/quasarlf/qlfdata/': Path to the Shen+2020 data for the bolometric LF at different redshifts
 
         --------------
 
@@ -465,4 +467,41 @@ class Model_Info(object):
         Lum = (mdot * c.c**2).decompose().to(u.erg / u.s).value
 
         return Lum
+    
+    def get_Luminosity_Function(self, mass, logL_grid, z, loglam0, alpha, beta, sigma_loglam, fduty):
+        C_edd = (4 * np.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value # erg/s per Msun
 
+        logC = np.log10(C_edd)
+        masses, phiM = self.bhmf(mass, redz=z)
+        logM_grid = masses
+
+        loglam_M = alpha * logM_grid + loglam0 + beta * (1 + z)
+        mu_L = logM_grid[None, :] + logC + loglam_M
+
+        inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
+        K = inv_sqrt2pi/sigma_loglam * np.exp(
+            -0.5*((logL_grid[:, None] - mu_L)/sigma_loglam)**2
+        )
+        dlogM = logM_grid[1] - logM_grid[0]
+        phiL_model = np.dot(K, phiM) * dlogM
+
+        return phiL_model * fduty
+
+    def fit_Luminosity_Function(self, mass, logL_grid, z, loglam0, alpha, beta, sigma_loglam, fduty):
+        C_edd = (4 * pt.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value # erg/s per Msun
+
+        logC = pt.log10(C_edd)
+        masses, phiM = self.bhmf(mass, redz=z)
+        logM_grid = masses
+
+        loglam_M = alpha * logM_grid + loglam0 + beta * (1 + z)
+        mu_L = logM_grid[None, :] + logC + loglam_M
+
+        inv_sqrt2pi = 1.0 / pt.sqrt(2*np.pi)
+        K = inv_sqrt2pi/sigma_loglam * pt.exp(
+            -0.5*((logL_grid[:, None] - mu_L)/sigma_loglam)**2
+        )
+        dlogM = logM_grid[1] - logM_grid[0]
+        phiL_model = pt.dot(K, phiM) * dlogM
+
+        return phiL_model * fduty
