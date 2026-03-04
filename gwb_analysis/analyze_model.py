@@ -17,7 +17,7 @@ import astropy.constants as c
 
 import copy
 
-import pytensor.tensor as pt
+# import pytensor.tensor as pt
 
 """
 TODO:
@@ -252,12 +252,11 @@ class Model_Info(object):
         ax.plot(np.log10(self.freqs), gwb[sim_idx], lw=lw, ls=self.line_style, c=self.color, label=label)
         if errorbars:
             valid = np.where((vals >= (np.nanmax(vals)- self.threshold)))[0]
-            print(len(valid) / len(vals))
+            # print(len(valid) / len(vals))
             up = np.max(gwb[valid], axis=0)
             dn = np.min(gwb[valid], axis=0)
             ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
 
-        
     def bhmf(self, mass, redz, fiducial=False):
         """
         Produces the black hole mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
@@ -323,6 +322,7 @@ class Model_Info(object):
         masses = np.linspace(mass[0], mass[1], mass[2])
         
         self.bhmf_dict = copy.deepcopy(self.space_class.DEFAULTS)
+        assert self.posteriors != self.fiducial_values, "Posteriors have not been calculated yet. Run get_posteriors() before calculating error bars on the BHMF."
 
         for par in self.bhmf_dict.keys():
             self.bhmf_dict[par] = np.array(np.random.normal(self.posteriors[par], scale=self.posteriors_err[par], size=ndraws))
@@ -384,7 +384,7 @@ class Model_Info(object):
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
 
-    def calulate_radiative_efficiency(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+    def calculate_radiative_efficiency(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
         Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the
         luminosity function at the average redshift. This is a rough calculation that assumes that the change in the BHMF and LF between the two redshifts is solely due to accretion
@@ -398,7 +398,10 @@ class Model_Info(object):
 
         --------------
 
-        Returns: radiative efficiency between the two redshifts
+        Returns:
+        erad: radiative efficiency between the two redshifts
+        mdot: the total mass gain between those redshifts (scaled)
+        Lum: the luminosity at the latter redshift
 
         --------------
 
@@ -442,66 +445,16 @@ class Model_Info(object):
         erad = Lum / (mdot * c.c**2)
         # erad = mdot
 
-        return erad.decompose()
-
-
-    def fit_AGN_Luminosity(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
-        """
-        Calculate the AGN luminosity implied by the model at a given redshift, assume erad = f_obsc = f_acc = 1 so that they can be fit for.
-        """
-        # Get BHMF at each redshift
-
-        z1 = zval
-        z2 = zval + step
-
-        dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
-        volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
-
-        # Mass Function
-        masses, bhmf1 = self.bhmf(mass, redz=z1, fiducial=fiducial)
-        masses, bhmf2 = self.bhmf(mass, redz=z2, fiducial=fiducial)
-        
-        mdot = (trapz((bhmf1 - bhmf2) * 10**masses, masses) * u.Msun / dt)
-
-        # Luminosity Calculation
-        Lum = (mdot * c.c**2).decompose().to(u.erg / u.s).value
-
-        return Lum
+        return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
-    def get_Luminosity_Function(self, mass, logL_grid, z, loglam0, alpha, beta, sigma_loglam, fduty):
-        C_edd = (4 * np.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value # erg/s per Msun
+    def fdfunc(self, mass, redshift):
+        norm_fit = [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
+        slope_fit = [0.2927610944131739, -6.537700910036786, 35.65876956759064]
 
-        logC = np.log10(C_edd)
-        masses, phiM = self.bhmf(mass, redz=z)
-        logM_grid = masses
+        norm = norm_fit[0]*mass**2 + norm_fit[1]*mass + norm_fit[2]
+        slope = slope_fit[0]*mass**2 + slope_fit[1]*mass + slope_fit[2]
+        phi_fd = norm * (1 + redshift)**slope
 
-        loglam_M = alpha * logM_grid + loglam0 + beta * (1 + z)
-        mu_L = logM_grid[None, :] + logC + loglam_M
+        phi_fd[phi_fd < -2.5] = -2.5
 
-        inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
-        K = inv_sqrt2pi/sigma_loglam * np.exp(
-            -0.5*((logL_grid[:, None] - mu_L)/sigma_loglam)**2
-        )
-        dlogM = logM_grid[1] - logM_grid[0]
-        phiL_model = np.dot(K, phiM) * dlogM
-
-        return phiL_model * fduty
-
-    def fit_Luminosity_Function(self, mass, logL_grid, z, loglam0, alpha, beta, sigma_loglam, fduty):
-        C_edd = (4 * pt.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value # erg/s per Msun
-
-        logC = pt.log10(C_edd)
-        masses, phiM = self.bhmf(mass, redz=z)
-        logM_grid = masses
-
-        loglam_M = alpha * logM_grid + loglam0 + beta * (1 + z)
-        mu_L = logM_grid[None, :] + logC + loglam_M
-
-        inv_sqrt2pi = 1.0 / pt.sqrt(2*np.pi)
-        K = inv_sqrt2pi/sigma_loglam * pt.exp(
-            -0.5*((logL_grid[:, None] - mu_L)/sigma_loglam)**2
-        )
-        dlogM = logM_grid[1] - logM_grid[0]
-        phiL_model = pt.dot(K, phiM) * dlogM
-
-        return phiL_model * fduty
+        return 10**phi_fd
