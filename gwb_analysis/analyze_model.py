@@ -480,7 +480,7 @@ class Model_Info(object):
 
         return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
-    def fdfunc(self, logmass, redshift):
+    def fdfunc(self, logmass, redshift, fdmin=0.06):
         """
         Fit from https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
         """
@@ -501,7 +501,7 @@ class Model_Info(object):
 
         phi_fd = norm * (redshift) + slope
 
-        phi_fd[phi_fd < 0.06] = 0.06
+        phi_fd[phi_fd < fdmin] = fdmin
 
         return phi_fd
     
@@ -543,6 +543,7 @@ class Model_Info(object):
         """
         Fit from https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
         Msun / year
+        Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)
         """
         if fiducial:
             zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
@@ -561,53 +562,103 @@ class Model_Info(object):
 
         return 1.3595507359218555 * mstar_log10 + intercept
     
-    def bhargal_err(self, mbh_log10, redshift, sval, fiducial=False):
+    def eta_from_mbh_davis(self, mbh_log10):
         """
-        Msun / year
+        https://iopscience.iop.org/article/10.1088/0004-637X/728/2/98/pdf
+
+        Not redshift dependent
         """
-        if fiducial:
-            scatter = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
-            zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
-            mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
-            mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
 
-        if not fiducial:
-            scatter = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
-            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
-            mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
-            mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
+        etas = 0.089 * (10**mbh_log10/ 1e8)**0.52
+        etas[etas > 1] = 1
+        return etas
 
-        mstar_log10 = (mbh_log10 - np.log10(mamp_z)) / mplaw_z + 11 + np.random.normal(0, scatter, size=len(mbh_log10))
+    def eta_from_mbh_line(self, mbh_log10):
+        """
+        Does not change with redshift, not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
+        """
 
-        c, k, b = 2.53850958, 0.85309541, -18.35185436
-        intercept = c * (1 - np.exp(-k*redshift)) + b
+        m = 0.24675530275901314
+        b = -1.4300561796413318
 
-        return 1.3595507359218555 * mstar_log10 + intercept + np.random.normal(0, sval, size=len(mbh_log10))
+        eta_high = m*mbh_log10 + b
+
+        y1 = 0
+        y2 = eta_high[mbh_log10 <= 7][-1]
+
+        x1 = 1
+        x2 = 7
+        eta_log = (y2 - y1) / (x2 - x1) * (mbh_log10[mbh_log10 <= 7] - x1) + y1
+        etas = np.append(eta_log, eta_high[mbh_log10 > 7])
+
+        etas[etas > 1] = 1
+        return etas
+
+    def eta_from_mbh_logistic(self, mbh_log10, min=0.25, k=-1.4, m0=8.4):
+        """
+        Does not change with redshift, not advised to use for redshifts below 0.8. Logistic function
+        """
+
+        l = 1.0 - min
+        return l / (1 + np.exp(k * (mbh_log10 - m0))) + min
     
 
-    def L_from_Mbh_via_mdot(self, mass, lums_log10, redshift, fiducial=False, scattermdotmstar=0.3):
+    def L_from_Mbh_via_mdot_eta_func(self, mass, lums_log10, redshift, fiducial=False, rad_eff_lowz=0.1):
         """
         Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
         """
+        scattereta = 0.5
+        scattermdotmstar = 0.3
 
         if fiducial:
             scattermmb = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
-            scatter = np.sqrt(scattermmb**2 + scattermdotmstar**2)
+            scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
 
         if not fiducial:
             scattermmb = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
-            scatter = np.sqrt(scattermmb**2 + scattermdotmstar**2)
+            scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
 
         mbh_log10, ndens = self.bhmf(mass, redshift, fiducial=fiducial)
 
         Mdot_mean = 10**self.bhargal(mbh_log10, redshift, fiducial=fiducial) * 6.3008906592961785e+25  # Msun / year to g / s
+
+        etas = self.eta_from_mbh_davis(mbh_log10)
         
-        Lmean_log10 = np.log10(Mdot_mean * (2.9979246e10)**2)
+        Lmean_log10 = np.log10(Mdot_mean * (2.9979246e10)**2 * etas)
 
         inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
         K = inv_sqrt2pi/scatter * np.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
 
         dlogL = lums_log10[1] - lums_log10[0]
-        bhmf_conv = np.dot(K, ndens) * dlogL
+        lf_conv = np.dot(K, ndens) * dlogL
 
-        return bhmf_conv
+        return lf_conv
+
+    def L_from_Mbh_via_mdot_any_eta(self, mass, lums_log10, redshift, rad_eff=0.1, fiducial=False):
+        """
+        Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
+        """
+        scattereta = 0.5
+        scattermdotmstar = 0.3
+
+        if fiducial:
+            scattermmb = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
+            scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
+
+        if not fiducial:
+            scattermmb = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
+            scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
+
+        mbh_log10, ndens = self.bhmf(mass, redshift, fiducial=fiducial)
+
+        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, fiducial=fiducial) * 6.3008906592961785e+25  # Msun / year to g / s
+        
+        Lmean_log10 = np.log10(Mdot_mean * (2.9979246e10)**2 * rad_eff)
+
+        inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
+        K = inv_sqrt2pi/scatter * np.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
+
+        dlogL = lums_log10[1] - lums_log10[0]
+        lf_conv = np.dot(K, ndens) * dlogL
+
+        return lf_conv
