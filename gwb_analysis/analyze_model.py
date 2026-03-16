@@ -352,6 +352,39 @@ class Model_Info(object):
         
         return masses, phi_50, phi_84, phi_16
     
+    def gsmf(self, mass, redz, fiducial=False):
+        """
+        Produces the galaxy stellar mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
+
+        Arguments:
+        mass: tuple (min, max, npoints) in log10(Msun/Msol) to be used as arguments in np.linspace()
+        redz: redshift
+        -----------
+        Returns: (masses, bhmf, None) where bhmf is the galaxy stellar mass function at the given redshift
+        """
+        masses = np.linspace(mass[0], mass[1], mass[2])
+
+        if not fiducial:
+            log10_phi1 = [self.posteriors['gsmf_log10_phi_one_z0'], self.posteriors['gsmf_log10_phi_one_z1'], self.posteriors['gsmf_log10_phi_one_z2']]
+            log10_phi2 = [self.posteriors['gsmf_log10_phi_two_z0'], self.posteriors['gsmf_log10_phi_two_z1'], self.posteriors['gsmf_log10_phi_two_z2']]
+            log10_mstar = [self.posteriors['gsmf_log10_mstar_z0'], self.posteriors['gsmf_log10_mstar_z1'], self.posteriors['gsmf_log10_mstar_z2']]
+            alpha1 = self.posteriors['gsmf_alpha_one']
+            alpha2 = self.posteriors['gsmf_alpha_two']
+            
+            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+            
+        if fiducial:
+            log10_phi1 = [self.fiducial_values['gsmf_log10_phi_one_z0'], self.fiducial_values['gsmf_log10_phi_one_z1'], self.fiducial_values['gsmf_log10_phi_one_z2']]
+            log10_phi2 = [self.fiducial_values['gsmf_log10_phi_two_z0'], self.fiducial_values['gsmf_log10_phi_two_z1'], self.fiducial_values['gsmf_log10_phi_two_z2']]
+            log10_mstar = [self.fiducial_values['gsmf_log10_mstar_z0'], self.fiducial_values['gsmf_log10_mstar_z1'], self.fiducial_values['gsmf_log10_mstar_z2']]
+            alpha1 = self.fiducial_values['gsmf_alpha_one']
+            alpha2 = self.fiducial_values['gsmf_alpha_two']
+            
+            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+            
+        
+        return masses, gsmf(10**masses * MSOL, redz)
+    
 
     def get_shenf(self, redshift, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
@@ -447,14 +480,130 @@ class Model_Info(object):
 
         return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
-    def fdfunc(self, mass, redshift):
-        norm_fit = [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
-        slope_fit = [0.2927610944131739, -6.537700910036786, 35.65876956759064]
+    def fdfunc(self, logmass, redshift):
+        norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
+        slope_fit = [ 0.01273298, -0.28087742, 1.5361624 ]  # [0.2927610944131739, -6.537700910036786, 35.65876956759064]
 
-        norm = norm_fit[0]*mass**2 + norm_fit[1]*mass + norm_fit[2]
-        slope = slope_fit[0]*mass**2 + slope_fit[1]*mass + slope_fit[2]
-        phi_fd = norm * (1 + redshift)**slope
+        norm = norm_fit[0]*logmass**2 + norm_fit[1]*logmass + norm_fit[2]
+        norm[norm < 0.0] = 0.0
+        slope = slope_fit[0]*logmass**2 + slope_fit[1]*logmass + slope_fit[2]
+        slope[slope > 0.0] = 0.0
 
-        phi_fd[phi_fd < -2.5] = -2.5
+        # norm = norm_fit[0]*logmass**2 + norm_fit[1]*logmass + norm_fit[2]
+        # if norm < 0.0:
+        #     norm = 0.0
+        # slope = slope_fit[0]*logmass**2 + slope_fit[1]*logmass + slope_fit[2]
+        # if slope > 0.0:
+        #     slope = 0.0
 
-        return 10**phi_fd
+        phi_fd = norm * (redshift) + slope
+
+        phi_fd[phi_fd < 0.06] = 0.06
+
+        return phi_fd
+    
+    def bhmf_from_gsmf(self, mstar, mbh, redshift, fiducial=False):
+        """
+        Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
+        """
+
+        mstar_log10, ndens = self.gsmf([mstar[0], mstar[1], mstar[2]], redz=redshift, fiducial=True)
+        mbh_log10  = np.linspace(mbh[0], mbh[1], mbh[2])
+
+        if fiducial:
+            scatter = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
+
+            zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
+            mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+
+            mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
+        
+        if not fiducial:
+            scatter = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
+
+            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
+            mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+
+            mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
+
+        logMbh_mean = np.log10(mamp_z) + mplaw_z * (mstar_log10 - 11.0)
+
+        inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
+        K = inv_sqrt2pi/scatter * np.exp( -0.5*((mbh_log10[:, None] - logMbh_mean)/scatter)**2)
+
+        dlogM = mbh_log10[1] - mbh_log10[0]
+        bhmf_conv = np.dot(K, ndens) * dlogM
+
+        return mbh_log10, bhmf_conv
+    
+    def bhargal(self, mbh_log10, redshift, fiducial=False):
+        """
+        Msun / year
+        """
+        if fiducial:
+            zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
+            mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+            mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
+
+        if not fiducial:
+            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
+            mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+            mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
+
+        mstar_log10 = (mbh_log10 - np.log10(mamp_z)) / mplaw_z + 11
+
+        c, k, b = 2.53850958, 0.85309541, -18.35185436
+        intercept = c * (1 - np.exp(-k*redshift)) + b
+
+        return 1.3595507359218555 * mstar_log10 + intercept
+    
+    def bhargal_err(self, mbh_log10, redshift, sval, fiducial=False):
+        """
+        Msun / year
+        """
+        if fiducial:
+            scatter = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
+            zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
+            mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+            mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
+
+        if not fiducial:
+            scatter = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
+            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
+            mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+            mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
+
+        mstar_log10 = (mbh_log10 - np.log10(mamp_z)) / mplaw_z + 11 + np.random.normal(0, scatter, size=len(mbh_log10))
+
+        c, k, b = 2.53850958, 0.85309541, -18.35185436
+        intercept = c * (1 - np.exp(-k*redshift)) + b
+
+        return 1.3595507359218555 * mstar_log10 + intercept + np.random.normal(0, sval, size=len(mbh_log10))
+    
+
+    def L_from_Mbh_via_mdot(self, mass, lums_log10, redshift, fiducial=False, scattermdotmstar=0.3):
+        """
+        Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
+        """
+
+        if fiducial:
+            scattermmb = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
+            scatter = np.sqrt(scattermmb**2 + scattermdotmstar**2)
+
+        if not fiducial:
+            scattermmb = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
+            scatter = np.sqrt(scattermmb**2 + scattermdotmstar**2)
+
+        mbh_log10, ndens = self.bhmf(mass, redshift, fiducial=fiducial)
+
+        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, fiducial=fiducial) * 6.3008906592961785e+25  # Msun / year to g / s
+        
+        Lmean_log10 = np.log10(Mdot_mean * (2.9979246e10)**2)
+
+        inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
+        K = inv_sqrt2pi/scatter * np.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
+
+        dlogL = lums_log10[1] - lums_log10[0]
+        bhmf_conv = np.dot(K, ndens) * dlogL
+
+        return bhmf_conv
