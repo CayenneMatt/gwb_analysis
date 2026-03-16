@@ -481,6 +481,9 @@ class Model_Info(object):
         return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
     def fdfunc(self, logmass, redshift):
+        """
+        Fit from https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
+        """
         norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
         slope_fit = [ 0.01273298, -0.28087742, 1.5361624 ]  # [0.2927610944131739, -6.537700910036786, 35.65876956759064]
 
@@ -538,6 +541,7 @@ class Model_Info(object):
     
     def bhargal(self, mbh_log10, redshift, fiducial=False):
         """
+        Fit from https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
         Msun / year
         """
         if fiducial:
