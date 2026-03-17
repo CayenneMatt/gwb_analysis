@@ -492,13 +492,6 @@ class Model_Info(object):
         slope = slope_fit[0]*logmass**2 + slope_fit[1]*logmass + slope_fit[2]
         slope[slope > 0.0] = 0.0
 
-        # norm = norm_fit[0]*logmass**2 + norm_fit[1]*logmass + norm_fit[2]
-        # if norm < 0.0:
-        #     norm = 0.0
-        # slope = slope_fit[0]*logmass**2 + slope_fit[1]*logmass + slope_fit[2]
-        # if slope > 0.0:
-        #     slope = 0.0
-
         phi_fd = norm * (redshift) + slope
 
         phi_fd[phi_fd < fdmin] = fdmin
@@ -603,7 +596,7 @@ class Model_Info(object):
         return l / (1 + np.exp(k * (mbh_log10 - m0))) + min
     
 
-    def L_from_Mbh_via_mdot_eta_func(self, mass, lums_log10, redshift, fiducial=False, rad_eff_lowz=0.1):
+    def L_from_Mbh_via_mdot_eta_func(self, mass, lums_log10, redshift, fiducial=False, eta_func = 'Davis', rad_eff=None):
         """
         Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
         """
@@ -622,38 +615,22 @@ class Model_Info(object):
 
         Mdot_mean = 10**self.bhargal(mbh_log10, redshift, fiducial=fiducial) * 6.3008906592961785e+25  # Msun / year to g / s
 
-        etas = self.eta_from_mbh_davis(mbh_log10)
+        if eta_func == 'Davis':
+            etas = self.eta_from_mbh_davis(mbh_log10)
+
+        elif eta_func == 'Logistic':
+            etas = self.eta_from_mbh_logistic(mbh_log10)
+        
+        elif eta_func == 'Line':
+            etas = self.eta_from_mbh_line(mbh_log10)
+        
+        elif eta_func == 'Constant':
+            if rad_eff:
+                etas = rad_eff
+            else:
+                raise ValueError("Please provide a radiative efficiency value.")
         
         Lmean_log10 = np.log10(Mdot_mean * (2.9979246e10)**2 * etas)
-
-        inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
-        K = inv_sqrt2pi/scatter * np.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
-
-        dlogL = lums_log10[1] - lums_log10[0]
-        lf_conv = np.dot(K, ndens) * dlogL
-
-        return lf_conv
-
-    def L_from_Mbh_via_mdot_any_eta(self, mass, lums_log10, redshift, rad_eff=0.1, fiducial=False):
-        """
-        Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
-        """
-        scattereta = 0.5
-        scattermdotmstar = 0.3
-
-        if fiducial:
-            scattermmb = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
-            scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
-
-        if not fiducial:
-            scattermmb = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
-            scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
-
-        mbh_log10, ndens = self.bhmf(mass, redshift, fiducial=fiducial)
-
-        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, fiducial=fiducial) * 6.3008906592961785e+25  # Msun / year to g / s
-        
-        Lmean_log10 = np.log10(Mdot_mean * (2.9979246e10)**2 * rad_eff)
 
         inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
         K = inv_sqrt2pi/scatter * np.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
