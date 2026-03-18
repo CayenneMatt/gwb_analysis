@@ -17,7 +17,7 @@ import astropy.constants as c
 
 import copy
 
-import pytensor.tensor as pt
+# import pytensor.tensor as pt
 
 """
 TODO:
@@ -252,12 +252,11 @@ class Model_Info(object):
         ax.plot(np.log10(self.freqs), gwb[sim_idx], lw=lw, ls=self.line_style, c=self.color, label=label)
         if errorbars:
             valid = np.where((vals >= (np.nanmax(vals)- self.threshold)))[0]
-            print(len(valid) / len(vals))
+            # print(len(valid) / len(vals))
             up = np.max(gwb[valid], axis=0)
             dn = np.min(gwb[valid], axis=0)
             ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
 
-        
     def bhmf(self, mass, redz, fiducial=False):
         """
         Produces the black hole mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
@@ -323,6 +322,7 @@ class Model_Info(object):
         masses = np.linspace(mass[0], mass[1], mass[2])
         
         self.bhmf_dict = copy.deepcopy(self.space_class.DEFAULTS)
+        assert self.posteriors != self.fiducial_values, "Posteriors have not been calculated yet. Run get_posteriors() before calculating error bars on the BHMF."
 
         for par in self.bhmf_dict.keys():
             self.bhmf_dict[par] = np.array(np.random.normal(self.posteriors[par], scale=self.posteriors_err[par], size=ndraws))
@@ -351,6 +351,39 @@ class Model_Info(object):
         phi_50, phi_84, phi_16 = np.nanpercentile(phis, [50, 84, 16], axis = 0)
         
         return masses, phi_50, phi_84, phi_16
+    
+    def gsmf(self, mass, redz, fiducial=False):
+        """
+        Produces the galaxy stellar mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
+
+        Arguments:
+        mass: tuple (min, max, npoints) in log10(Msun/Msol) to be used as arguments in np.linspace()
+        redz: redshift
+        -----------
+        Returns: (masses, bhmf, None) where bhmf is the galaxy stellar mass function at the given redshift
+        """
+        masses = np.linspace(mass[0], mass[1], mass[2])
+
+        if not fiducial:
+            log10_phi1 = [self.posteriors['gsmf_log10_phi_one_z0'], self.posteriors['gsmf_log10_phi_one_z1'], self.posteriors['gsmf_log10_phi_one_z2']]
+            log10_phi2 = [self.posteriors['gsmf_log10_phi_two_z0'], self.posteriors['gsmf_log10_phi_two_z1'], self.posteriors['gsmf_log10_phi_two_z2']]
+            log10_mstar = [self.posteriors['gsmf_log10_mstar_z0'], self.posteriors['gsmf_log10_mstar_z1'], self.posteriors['gsmf_log10_mstar_z2']]
+            alpha1 = self.posteriors['gsmf_alpha_one']
+            alpha2 = self.posteriors['gsmf_alpha_two']
+            
+            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+            
+        if fiducial:
+            log10_phi1 = [self.fiducial_values['gsmf_log10_phi_one_z0'], self.fiducial_values['gsmf_log10_phi_one_z1'], self.fiducial_values['gsmf_log10_phi_one_z2']]
+            log10_phi2 = [self.fiducial_values['gsmf_log10_phi_two_z0'], self.fiducial_values['gsmf_log10_phi_two_z1'], self.fiducial_values['gsmf_log10_phi_two_z2']]
+            log10_mstar = [self.fiducial_values['gsmf_log10_mstar_z0'], self.fiducial_values['gsmf_log10_mstar_z1'], self.fiducial_values['gsmf_log10_mstar_z2']]
+            alpha1 = self.fiducial_values['gsmf_alpha_one']
+            alpha2 = self.fiducial_values['gsmf_alpha_two']
+            
+            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+            
+        
+        return masses, gsmf(10**masses * MSOL, redz)
     
 
     def get_shenf(self, redshift, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
@@ -384,7 +417,7 @@ class Model_Info(object):
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
 
-    def calulate_radiative_efficiency(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+    def calculate_radiative_efficiency(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
         Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the
         luminosity function at the average redshift. This is a rough calculation that assumes that the change in the BHMF and LF between the two redshifts is solely due to accretion
@@ -398,7 +431,10 @@ class Model_Info(object):
 
         --------------
 
-        Returns: radiative efficiency between the two redshifts
+        Returns:
+        erad: radiative efficiency between the two redshifts
+        mdot: the total mass gain between those redshifts (scaled)
+        Lum: the luminosity at the latter redshift
 
         --------------
 
@@ -442,66 +478,164 @@ class Model_Info(object):
         erad = Lum / (mdot * c.c**2)
         # erad = mdot
 
-        return erad.decompose()
-
-
-    def fit_AGN_Luminosity(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
-        """
-        Calculate the AGN luminosity implied by the model at a given redshift, assume erad = f_obsc = f_acc = 1 so that they can be fit for.
-        """
-        # Get BHMF at each redshift
-
-        z1 = zval
-        z2 = zval + step
-
-        dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
-        volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
-
-        # Mass Function
-        masses, bhmf1 = self.bhmf(mass, redz=z1, fiducial=fiducial)
-        masses, bhmf2 = self.bhmf(mass, redz=z2, fiducial=fiducial)
-        
-        mdot = (trapz((bhmf1 - bhmf2) * 10**masses, masses) * u.Msun / dt)
-
-        # Luminosity Calculation
-        Lum = (mdot * c.c**2).decompose().to(u.erg / u.s).value
-
-        return Lum
+        return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
-    def get_Luminosity_Function(self, mass, logL_grid, z, loglam0, alpha, beta, sigma_loglam, fduty):
-        C_edd = (4 * np.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value # erg/s per Msun
+    def fdfunc(self, logmass, redshift, fdmin=0.06):
+        """
+        Fit from https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
+        """
+        norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
+        slope_fit = [ 0.01273298, -0.28087742, 1.5361624 ]  # [0.2927610944131739, -6.537700910036786, 35.65876956759064]
 
-        logC = np.log10(C_edd)
-        masses, phiM = self.bhmf(mass, redz=z)
-        logM_grid = masses
+        norm = norm_fit[0]*logmass**2 + norm_fit[1]*logmass + norm_fit[2]
+        norm[norm < 0.0] = 0.0
+        slope = slope_fit[0]*logmass**2 + slope_fit[1]*logmass + slope_fit[2]
+        slope[slope > 0.0] = 0.0
 
-        loglam_M = alpha * logM_grid + loglam0 + beta * (1 + z)
-        mu_L = logM_grid[None, :] + logC + loglam_M
+        phi_fd = norm * (redshift) + slope
+
+        phi_fd[phi_fd < fdmin] = fdmin
+
+        return phi_fd
+    
+    def bhmf_from_gsmf(self, mstar, mbh, redshift, fiducial=False):
+        """
+        Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
+        """
+
+        mstar_log10, ndens = self.gsmf([mstar[0], mstar[1], mstar[2]], redz=redshift, fiducial=True)
+        mbh_log10  = np.linspace(mbh[0], mbh[1], mbh[2])
+
+        if fiducial:
+            scatter = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
+
+            zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
+            mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+
+            mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
+        
+        if not fiducial:
+            scatter = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
+
+            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
+            mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+
+            mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
+
+        logMbh_mean = np.log10(mamp_z) + mplaw_z * (mstar_log10 - 11.0)
 
         inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
-        K = inv_sqrt2pi/sigma_loglam * np.exp(
-            -0.5*((logL_grid[:, None] - mu_L)/sigma_loglam)**2
-        )
-        dlogM = logM_grid[1] - logM_grid[0]
-        phiL_model = np.dot(K, phiM) * dlogM
+        K = inv_sqrt2pi/scatter * np.exp( -0.5*((mbh_log10[:, None] - logMbh_mean)/scatter)**2)
 
-        return phiL_model * fduty
+        dlogM = mbh_log10[1] - mbh_log10[0]
+        bhmf_conv = np.dot(K, ndens) * dlogM
 
-    def fit_Luminosity_Function(self, mass, logL_grid, z, loglam0, alpha, beta, sigma_loglam, fduty):
-        C_edd = (4 * pt.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value # erg/s per Msun
+        return mbh_log10, bhmf_conv
+    
+    def bhargal(self, mbh_log10, redshift, fiducial=False):
+        """
+        Fit from https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
+        Msun / year
+        Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)
+        """
+        if fiducial:
+            zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
+            mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+            mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
 
-        logC = pt.log10(C_edd)
-        masses, phiM = self.bhmf(mass, redz=z)
-        logM_grid = masses
+        if not fiducial:
+            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
+            mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+            mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
 
-        loglam_M = alpha * logM_grid + loglam0 + beta * (1 + z)
-        mu_L = logM_grid[None, :] + logC + loglam_M
+        mstar_log10 = (mbh_log10 - np.log10(mamp_z)) / mplaw_z + 11
 
-        inv_sqrt2pi = 1.0 / pt.sqrt(2*np.pi)
-        K = inv_sqrt2pi/sigma_loglam * pt.exp(
-            -0.5*((logL_grid[:, None] - mu_L)/sigma_loglam)**2
-        )
-        dlogM = logM_grid[1] - logM_grid[0]
-        phiL_model = pt.dot(K, phiM) * dlogM
+        c, k, b = 2.53850958, 0.85309541, -18.35185436
+        intercept = c * (1 - np.exp(-k*redshift)) + b
 
-        return phiL_model * fduty
+        return 1.3595507359218555 * mstar_log10 + intercept
+    
+    def eta_from_mbh_davis(self, mbh_log10):
+        """
+        https://iopscience.iop.org/article/10.1088/0004-637X/728/2/98/pdf
+
+        Not redshift dependent
+        """
+
+        etas = 0.089 * (10**mbh_log10/ 1e8)**0.52
+        etas[etas > 1] = 1
+        return etas
+
+    def eta_from_mbh_line(self, mbh_log10):
+        """
+        Does not change with redshift, not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
+        """
+
+        m = 0.24675530275901314
+        b = -1.4300561796413318
+
+        eta_high = m*mbh_log10 + b
+
+        y1 = 0
+        y2 = eta_high[mbh_log10 <= 7][-1]
+
+        x1 = 1
+        x2 = 7
+        eta_log = (y2 - y1) / (x2 - x1) * (mbh_log10[mbh_log10 <= 7] - x1) + y1
+        etas = np.append(eta_log, eta_high[mbh_log10 > 7])
+
+        etas[etas > 1] = 1
+        return etas
+
+    def eta_from_mbh_logistic(self, mbh_log10, min=0.25, k=-1.4, m0=8.4):
+        """
+        Does not change with redshift, not advised to use for redshifts below 0.8. Logistic function
+        """
+
+        l = 1.0 - min
+        return l / (1 + np.exp(k * (mbh_log10 - m0))) + min
+    
+
+    def L_from_Mbh_via_mdot_eta_func(self, mass, lums_log10, redshift, fiducial=False, eta_func = 'Davis', rad_eff=None):
+        """
+        Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
+        """
+        scattereta = 0.5
+        scattermdotmstar = 0.3
+
+        if fiducial:
+            scattermmb = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
+            scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
+
+        if not fiducial:
+            scattermmb = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
+            scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
+
+        mbh_log10, ndens = self.bhmf(mass, redshift, fiducial=fiducial)
+
+        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, fiducial=fiducial) * 6.3008906592961785e+25  # Msun / year to g / s
+
+        if eta_func == 'Davis':
+            etas = self.eta_from_mbh_davis(mbh_log10)
+
+        elif eta_func == 'Logistic':
+            etas = self.eta_from_mbh_logistic(mbh_log10)
+        
+        elif eta_func == 'Line':
+            etas = self.eta_from_mbh_line(mbh_log10)
+        
+        elif eta_func == 'Constant':
+            if rad_eff:
+                etas = rad_eff
+            else:
+                raise ValueError("Please provide a radiative efficiency value.")
+        
+        Lmean_log10 = np.log10(Mdot_mean * (2.9979246e10)**2 * etas)
+
+        inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
+        K = inv_sqrt2pi/scatter * np.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
+
+        dlogL = lums_log10[1] - lums_log10[0]
+        lf_conv = np.dot(K, ndens) * dlogL
+
+        return lf_conv
