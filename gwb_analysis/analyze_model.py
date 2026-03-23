@@ -35,7 +35,7 @@ class Model_Info(object):
         path to the data, should end with a '/' and be the same as the path used to generate the data
     file : str
         filename of the data, should be the same as the filename used to generate the data
-    model_name:  str
+    model_name :  str
         name of the model, used for plotting
     color : str
         color for all plotting associated with this model
@@ -295,7 +295,18 @@ class Model_Info(object):
     
     def corner_plot(self, nbins=20, cmap='Blues'):
         """
-        Old and slow, but tested version of corner plot, will be removed in favor of corner_plot_fast() pending appropriate testing.
+        Old and slow, but tested version of corner plot, will be removed in favor of corner_plot_fast() pending appropriate testing. Creates a corner plot for all parameters in the model.
+
+        Parameters
+        ----------
+        nbins : int, optional
+            number of bins to use in the histograms and contour plots. Default is 20
+        cmap : str, optional
+            name of matplotlib colormap to use for the points in the corner plot. Default is 'Blues'
+
+        Returns
+        -------
+        None, the corner plot is displayed using matplotlib
         """
         print('Depricated, use corner_plot_fast() instead.')
 
@@ -366,7 +377,18 @@ class Model_Info(object):
 
     def corner_plot_fast(self, nbins=20, cmap='Blues'):
         """
-        Faster version of corner plot
+        Faster version of corner plot. Creates a corner plot for all parameters in the model.
+
+        Parameters
+        ----------
+        nbins : int, optional
+            number of bins to use in the histograms and contour plots. Default is 20
+        cmap : str, optional
+            name of matplotlib colormap to use for the points in the corner plot. Default is 'Blues'
+
+        Returns
+        -------
+        None, the corner plot is displayed using matplotlib
         """
 
         npars = len(self.param_names)
@@ -439,6 +461,24 @@ class Model_Info(object):
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
     
     def add_spectrum(self, ax, lw=3, errorbars=False, label=None):
+        """
+        Add the spectrum of the model to a given axis, with optional error bars and label.
+
+        Parameters
+        ----------
+        ax : matplotlib axis
+            axis to which the spectrum will be added
+        lw : float, optional
+            line width of the spectrum, default is 3
+        errorbars : bool, optional
+            whether to add error bars to the spectrum, default is False
+        label : str, optional
+            label for the spectrum, default is None, in which case the model name will be used
+
+        Returns
+        -------
+        None, the spectrum is added to the given axis
+        """
         if not label:
             label = self.model_name
         vals = np.sum(self.ln_like[:, :self.nfreq], axis=-1)
@@ -574,8 +614,8 @@ class Model_Info(object):
 
         Parameters
         -----------
-        mass: tuple (min, max, npoints) in log10(Msun/Msol) to be used as arguments in np.linspace()
-        redz: redshift
+        mass : tuple (min, max, npoints) in log10(Msun/Msol) to be used as arguments in np.linspace()
+        redz : redshift
         
         Returns
         --------
@@ -718,9 +758,25 @@ class Model_Info(object):
 
         return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
-    def fdfunc(self, mbh_log10, redshift, fiducial=False, fdmin=0.06):
+    def fdfunc(self, mbh_log10, redshift, fiducial=False, fdmin=0.03):
         """
-        Fit from https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
+        Fit to agn fraction as a function of stellar mass from Zou et al. (2024) https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
+        Here stellar mass is inferred from black hole mass
+
+        Parameters
+        ----------
+        mbh_log10 : array-like
+            log10 of black hole mass in solar masses
+        redshift : float
+            redshift at which to evaluate the AGN fraction
+        fiducial : bool, optional
+            whether to use the fiducial values of the model parameters instead of the posteriors. Default is False
+        fdmin : float, optional
+            minimum AGN fraction to return, default is 0.03, which is the value used in Shen et al. (2020)
+        Returns
+        -------
+        phi_fd : array-like
+            AGN fraction as a function of black hole mass at the given redshift
         """
         norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
         slope_fit = [ 0.01273298, -0.28087742, 1.5361624 ]  # [0.2927610944131739, -6.537700910036786, 35.65876956759064]
@@ -748,13 +804,27 @@ class Model_Info(object):
 
         return phi_fd
     
-    def bhmf_from_gsmf(self, mstar, mbh, redshift, fiducial=False):
+    def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift, fiducial=False):
         """
         Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
-        """
 
-        mstar_log10, ndens = self.gsmf([mstar[0], mstar[1], mstar[2]], redz=redshift, fiducial=True)
-        mbh_log10  = np.linspace(mbh[0], mbh[1], mbh[2])
+        Parameters
+        ----------
+        mstar_log10 : array-like
+            log10 of stellar mass in solar masses at which to evaluate the BHMF
+        mbh_log10 : array-like
+            log10 of black hole mass in solar masses at which to evaluate the BHMF
+        redshift : float
+            redshift at which to evaluate the BHMF
+        fiducial : bool, optional
+            whether to use the fiducial values for the GSMF and MMBulge relationather than the posterior values. If True, the fiducial values will be used, if False, the posterior values will be used. Default is False
+        
+        Returns
+        -------
+        bhmf_conv : array-like
+            the black hole mass function at the given redshift calculated from the GSMF and MMBulge relation
+        """
+        ndens = self.gsmf(mstar_log10, redz=redshift, fiducial=True)
 
         if fiducial:
             scatter = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
@@ -780,7 +850,7 @@ class Model_Info(object):
         dlogM = mbh_log10[1] - mbh_log10[0]
         bhmf_conv = np.dot(K, ndens) * dlogM
 
-        return mbh_log10, bhmf_conv
+        return bhmf_conv
     
     def bhargal(self, mbh_log10, redshift, fiducial=False):
         """
@@ -790,6 +860,20 @@ class Model_Info(object):
         Fit from https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
         Msun / year
         Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)
+
+        Parameters
+        ----------
+        mbh_log10 : array-like
+            log10 of black hole mass in solar masses at which to evaluate the BHARGAL
+        redshift : float
+            redshift at which to evaluate the BHARGAL
+        fiducial : bool, optional
+            whether to use the fiducial values of the model parameters instead of the posteriors. Default is False
+
+        Returns
+        -------
+        bhargal : array-like
+            black hole accretion rate in Msun / year as a function of black hole mass and redshift
         """
         if fiducial:
             zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
@@ -813,6 +897,16 @@ class Model_Info(object):
         https://iopscience.iop.org/article/10.1088/0004-637X/728/2/98/pdf
 
         Not redshift dependent
+
+        Parameters 
+        ----------
+        mbh_log10 : array-like
+            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
+        
+        Returns
+        -------
+        etas : array-like
+            radiative efficiency as a function of black hole mass
         """
 
         etas = 0.089 * (10**mbh_log10/ 1e8)**0.52
@@ -823,6 +917,16 @@ class Model_Info(object):
         """
         https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract
         Does not change with redshift, not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
+
+        Parameters 
+        ----------
+        mbh_log10 : array-like
+            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
+        
+        Returns
+        -------
+        etas : array-like
+            radiative efficiency as a function of black hole mass
         """
 
         m = 0.24675530275901314
@@ -845,6 +949,16 @@ class Model_Info(object):
         """
         https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract
         Not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
+
+        Parameters 
+        ----------
+        mbh_log10 : array-like
+            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
+        
+        Returns
+        -------
+        etas : array-like
+            radiative efficiency as a function of black hole mass
         """
 
         m = 0.24675530275901314
@@ -870,6 +984,16 @@ class Model_Info(object):
         """
         https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract
         Not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
+
+        Parameters 
+        ----------
+        mbh_log10 : array-like
+            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
+        
+        Returns
+        -------
+        etas : array-like
+            radiative efficiency as a function of black hole mass
         """
 
         m = 0.24675530275901314
@@ -890,6 +1014,21 @@ class Model_Info(object):
     def eta_from_mbh_logistic(self, mbh_log10, min=0.25, k=-1.4, m0=8.4):
         """
         Not advised to use for redshifts below 0.8. Logistic function
+
+        Parameters 
+        ----------
+        mbh_log10 : array-like
+            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
+        min : float, optional
+            minimum value of the logistic function, default is 0.25. Default is 0.25
+        k : float, optional
+            steepness of the logistic function. Default is -1.4
+        m0 : float, optional
+            the value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 8.4
+        Returns
+        -------
+        etas : array-like
+            radiative efficiency as a function of black hole mass
         """
 
         l = 1.0 - min
@@ -918,7 +1057,8 @@ class Model_Info(object):
 
         Returns
         --------
-        lf_conv: the luminosity function calculated from the black hole mass function, accretion rate, and radiative efficiency
+        lf_conv : array
+            the luminosity function calculated from the black hole mass function, accretion rate, and radiative efficiency
         """
         scattereta = 0.5
         scattermdotmstar = 0.3
