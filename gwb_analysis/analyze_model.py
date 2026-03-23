@@ -29,119 +29,119 @@ class Model_Info(object):
     Class to analyze gravitational wave background models generated using holodeck.
     This class automatically reads the data and assigns attributes for the GWB amplitudes, parameters, likelihoods, and frequencies.
 
-    Parameters:
+    Parameters
     -----------
-    path: str
+    path : str
         path to the data, should end with a '/' and be the same as the path used to generate the data
-    file: str
+    file : str
         filename of the data, should be the same as the filename used to generate the data
-    model_name: str
+    model_name:  str
         name of the model, used for plotting
-    color: str
+    color : str
         color for all plotting associated with this model
-    line_style: str
+    line_style : str
         line style for all plotting associated with this model
 
-    threshold: float, optional, default: 0.5
-        minimum likelihood cutoff, used for plotting error bars on the spectrum
-    evolving: bool, optional, default: False
-        whether the model has MMBulge evolution, used for plotting
-    stdev: float, optional, default: None
-        standard deviation of evolution parameter, used for plotting, should be None if evolving is False
-    nfreq: int, optional, default: 5
-        number of frequency bins to use in likelihood calculation, 5 is recommended
-    param_space_name: str, optional, default: 'PS_Astro_Strong_All'
-        name of parameter space, should be the same as the parameter space used to generate the data
+    threshold : float, optional
+        minimum likelihood cutoff, used for plotting error bars on the spectrum. Default is 0.5
+    evolving : bool, optional
+        whether the model has MMBulge evolution, used for plotting. Default is False
+    stdev : float, optional
+        standard deviation of evolution parameter, used for plotting, should be None if evolving is False. Default is None
+    nfreq : int, optional
+        number of frequency bins to use in likelihood calculation, 5 is recommended. Default is 5
+    param_space_name : str, optional
+        name of parameter space, should be the same as the parameter space used to generate the data. Default is 'PS_Astro_Strong_All'
 
-    Attributes:
+    Attributes
     -----------
-    path: str
+    path : str
         path to the data specified as an argument
-    file: str
+    file : str
         filename of the data specified as an argument
-    param_space_name: str
+    param_space_name : str
         name of parameter space specified as an argument
-    gwb: array-like
+    gwb : array-like
         GWB amplitudes for each model, shape is (nsamples, nrealizations, nfreqs)
-    param_names: array-like
+    param_names : array-like
         names of parameters in the model
-    params: array-like
+    params : array-like
         parameter sample associated with each model
-    ln_like: array-like
+    ln_like : array-like
         log-likelihood of each model
-    freqs: array-like
+    freqs : array-like
         frequencies at which the amplitudes are calculated
-    model_name: str
+    model_name : str
         model name specified as an argument
-    color: str
+    color :  str
         color for all plotting associated with this model specified as an argument
-    line_style: str
+    line_style : str
         line style for all plotting associated with this model specified as an argument
-    threshold: float
+    threshold : float
         minimum likelihood cutoff specified as an argument
-    evolving: bool
+    evolving : bool
         whether the model has MMBulge evolution specified as an argument
-    stdev: float
+    stdev : float
         standard deviation of evolution parameter specified as an argument
-    nfreq: int
+    nfreq : int
         number of frequency bins to use in likelihood calculation specified as an argument
-    idcs: array-like
+    idcs : array-like
         index of evolution parameter, None if evolving is False
-    space_class: class
+    space_class : class
         class of the parameter space, used to get priors and fiducial values
-    fiducial_values: dict
+    fiducial_values:  dict
         dictionary of fiducial values for each parameter in the model
-    posteriors: dict
+    posteriors : dict
         dictionary of median posterior values for each parameter in the model,  (!!!) calculated by get_posteriors(),
         will be None until get_posteriors() is called
-    posteriors_err: dict
+    posteriors_err : dict
         dictionary of standard deviation of posterior values for each parameter in the model,  (!!!) calculated by get_posteriors(),
         will be the same as hardcoded default errors until get_posteriors() is called
-    plt_labels: dict
+    plt_labels : dict
         dictionary of plot labels associated with each parameter, used for plotting
     
-    Methods:
+    Methods
     --------
-    get_priors():
+    get_priors() :
         returns parameter names and default values from the prior parameter space.
-    get_posteriors():
-        Get the median of the posterior distributions for each parameter in the model and store them in the posteriors attribute.
-    corner_plot(nbins=20, cmap='Blues'):
+    get_posteriors() :
+        get the median of the posterior distributions for each parameter in the model and store them in the posteriors attribute.
+    corner_plot() :
         Old and slow, but tested version of corner plot, will be removed in favor of corner_plot_fast() pending appropriate testing.
-    corner_plot_fast(nbins=20, cmap='Blues'):
-        Faster version of corner plot, should produce the same plot as corner_plot() but much faster, recommended over corner_plot() pending appropriate testing.
-    add_spectrum(ax, lw=3, errorbars=False, label=None):
-        Add the spectrum of the model to a given axis, with optional error bars and label.
-    bhmf(mbh_log10, redz, fiducial=False):
-        Produce the black hole mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation,
+    corner_plot_fast() :
+        faster version of corner plot, should produce the same plot as corner_plot() but much faster, recommended over corner_plot() pending appropriate testing.
+    add_spectrum() :
+        add the spectrum of the model to a given axis, with optional error bars and label.
+    bhmf() :
+        produce the black hole mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation,
         using either the posterior values or the fiducial values for the parameters in the model.
-    bhmf_err(mbh_log10, redz, fiducial=False):
-        Produce the error on the black hole mass function at
+    bhmf_err() :
+        produce the error on the black hole mass function at
         a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation, using either the posterior values or the
         fiducial values for the parameters in the model, and using the standard deviation of the posterior values as the error on each parameter to calculate the error on the BHMF.
-    gsmf(mstar_log10, redz, fiducial=False):
-        Produce the galaxy stellar mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation,
+    gsmf() :
+        produce the galaxy stellar mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation,
         using either the posterior values or the fiducial values for the parameters in the model.
     
-    get_shenf(self, redshift, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
-            retrieve the Shen et al. (2020) QLF fit at a given redshift.
-    get_shend(self, redshift, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+    get_shenf() :
+        retrieve the Shen et al. (2020) QLF fit at a given redshift.
+    get_shend() :
         retrieve the Shen et al. (2020) QLF data at a given redshift.
-    fdfunc(self, logmass, redshift, fdmin=0.06):
+    fdfunc() :
         calculate the AGN fraction as a function of black hole mass and redshift, fit to data in Zou et al. (2024)
-    bhmf_from_gsmf(self, mstar, mbh, redshift, fiducial=False):
+    bhmf_from_gsmf() :
         calculate the black hole mass function from the galaxy stellar mass function using the MMBulge relation
-    calculate_radiative_efficiency(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+    calculate_radiative_efficiency() :
         calculate the radiative efficiency as a function of black hole mass at a given redshift.
-    bhargal(self, mbh_log10, redshift, fiducial=False):
+    bhargal() :
         calculate black hole accretion rate as a function of black hole mass and redshift.
-    eta_from_mbh_davis(self, mbh_log10):
+    eta_from_mbh_davis() :
         calculate radiative efficiency using the relation from Davis & Laor (2011) as a function of black hole mass.
-    eta_from_mbh_line(self, mbh_log10):
+    eta_from_mbh_line() :
         calculate radiative efficiency as a funciton of black hole mass using a linear fit to Li et al. (2012) data.
-    eta_from_mbh_logistic(self, mbh_log10, min=0.25, k=-1.4, m0=8.4):
-    calculate radiative efficiency as a function of black hole mass using a logistic fit to Li et al. (2012) data.
-    L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, fiducial=False, eta_func = 'Davis', rad_eff=None):
+    eta_from_mbh_logistic() :
+        calculate radiative efficiency as a function of black hole mass using a logistic fit to Li et al. (2012) data.
+    L_from_Mbh_via_mdot_eta_func() :
         calculate AGN luminosity from black hole mass and accretion rate, using a specified function for the radiative efficiency.
 
     """
@@ -167,7 +167,7 @@ class Model_Info(object):
         self.threshold = threshold  # Likelihood value above which are ~1% of all models
         self.evolving = evolving  # Whether the model has MMBulge evolution
         self.stdev = stdev  # Standard deviation of evolution parameter
-        self.nfreq = nfreq  # Number of frequency bits to fit to, default is 5
+        self.nfreq = nfreq  # Number of frequency bits to fit to. Default is 5
         self.idcs = None  # Index of evolution parameter
 
         id = np.where((self.param_names == 'mmb_zplaw') | (self.param_names == 'mmb_zplaw_amp') | (self.param_names == 'mmb_zplaw_slope') | (self.param_names == 'mmb_zplaw_scatter'))[0]
@@ -466,9 +466,9 @@ class Model_Info(object):
             to np.linspace().
         redz : float
             Redshift.
-        fiducial : bool, optional, default: False
+        fiducial : bool, optional
             Whether to use the fiducial values for the GSMF and MMBulge relation rather than the posterior values.
-            If True, the fiducial values will be used, if False, the posterior values will be used.
+            If True, the fiducial values will be used, if False, the posterior values will be used. Default is False
 
         Returns
         -------
@@ -517,14 +517,14 @@ class Model_Info(object):
         """
         Produces the black hole mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
 
-        Parameters:
+        Parameters
         -----------
         mass : array
             black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)
         redz : float
             redshift
 
-        Returns: 
+        Returns
         --------
         bhmf_median : array
             the median black hole mass function at the given redshift, calculated using the median posterior values for the parameters in the model
@@ -572,12 +572,12 @@ class Model_Info(object):
         """
         Produces the galaxy stellar mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
 
-        Parameters:
+        Parameters
         -----------
         mass: tuple (min, max, npoints) in log10(Msun/Msol) to be used as arguments in np.linspace()
         redz: redshift
         
-        Returns:
+        Returns
         --------
         The galaxy stellar mass function at the given redshift
         """
@@ -608,15 +608,15 @@ class Model_Info(object):
         """
         Retrieve the fit to the Shen+2020 bolometric luminosity function at a given redshift.
         
-        Parameters:  
+        Parameters
         -----------  
         redshift : flaot
             redshift of the fit to be used 0.2-7.0 in steps of 0.2
-        path_to_shen_fits : str, optional, default: "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
-            path to the Shen+2020 fits for the bolometric LF at different redshifts
+        path_to_shen_fits : str, optional
+            path to the Shen+2020 fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
 
 
-        Returns: 
+        Returns
         --------
         x : array
             the x-axis values, luminosity in log10(L/erg/s)
@@ -630,14 +630,14 @@ class Model_Info(object):
         """
         Retrieve the data from the Shen+2020 bolometric luminosity function at a given redshift.
 
-        Parameters:  
+        Parameters
         -----------  
         redshift : flaot
             redshift of the fit to be used 0.2-7.0 in steps of 0.2
-        path_to_shen_fits : str, optional, default: "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
-            path to the Shen+2020 fits for the bolometric LF at different redshifts
+        path_to_shen_fits : str, optional
+            path to the Shen+2020 fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlfdata/"
 
-        Returns: 
+        Returns
         --------
         x : array
             the x-axis values, luminosity in log10(L/erg/s)
@@ -647,24 +647,33 @@ class Model_Info(object):
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
 
-    def calculate_radiative_efficiency(self, zval, step, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+    def calculate_radiative_efficiency(self, zval, step=1e-3, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
         Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the
         luminosity function at the average redshift. This is a rough calculation that assumes that the change in the BHMF and LF between the two redshifts is solely due to accretion
         and does not consider mergers or other processes that may contribute to the growth of black holes.
 
-        Parameters:  
-        -----------
-        z1: lower redshift
-        z2: higher redshift
-        fiducial: whether to use the fiducial values of the model parameters instead of the posteriors
-        path_to_shen_fits = '/Users/cayenne/Documents/Research/quasarlf/qlffits/': path to the Shen+2020 fits for the bolometric LF at different redshifts
+        May have bugs, shouldn't be used
 
-        Returns:
+        Parameters
+        -----------
+        zval : float
+            the redshift at which to calculate the radiative efficiency
+        step : float, optional
+            the step in redshift to use for calculating the change in the BHMF and LF. Default is 1e-3
+        fiducial : bool, optional
+            whether to use the fiducial values of the model parameters instead of the posteriors. Default is False
+        path_to_shen_fits: str, optional
+            path to the Shen+2020 fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
+
+        Returns
         --------
-        erad: radiative efficiency between the two redshifts
-        mdot: the total mass gain between those redshifts (scaled)
-        Lum: the luminosity at the latter redshift
+        erad : float
+            radiative efficiency between the two redshifts
+        mdot : float
+            the total integrated mass density gain between those redshifts (scaled)
+        Lum : float
+            the total integrated luminosity at the latter redshift
 
         Issues:
 
@@ -672,6 +681,7 @@ class Model_Info(object):
         * Radiative efficiency may be mass and redshift dependent, not currently implemented
         * Need to make sure that it is always integrating over roughly similar mass - luminosity ranges
         * Integration only cosiders two bins and nothing in between, but should be fine for order of magnitude calculation
+        * May have a volume normalization issue
 
         """
         f_obsc = 1/3  # Fraction of AGN that are not obscured and therefore observed in the LF
@@ -834,7 +844,7 @@ class Model_Info(object):
     def eta_from_mbh_line_extra_slow(self, mbh_log10):
         """
         https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract
-        Does not change with redshift, not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
+        Not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
         """
 
         m = 0.24675530275901314
@@ -859,7 +869,7 @@ class Model_Info(object):
     def eta_from_mbh_line(self, mbh_log10):
         """
         https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract
-        Does not change with redshift, not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
+        Not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
         """
 
         m = 0.24675530275901314
@@ -879,7 +889,7 @@ class Model_Info(object):
 
     def eta_from_mbh_logistic(self, mbh_log10, min=0.25, k=-1.4, m0=8.4):
         """
-        Does not change with redshift, not advised to use for redshifts below 0.8. Logistic function
+        Not advised to use for redshifts below 0.8. Logistic function
         """
 
         l = 1.0 - min
@@ -891,16 +901,22 @@ class Model_Info(object):
         Calculate luminosity from black hole mass using the accretion rate and radiative efficiency.
         The accretion rate is calculated using the MMBulge relation and the GSMF, and the radiative efficiency is calculated using one of several functions of black hole mass.
 
-        Parameters:
+        Parameters
         -----------
-        mass: tuple (min, max, npoints) in log10(Mbh/Msol) to be used as arguments in np.linspace()
-        lums_log10: array of log10 luminosities at which to evaluate the luminosity function
-        redshift: redshift at which to evaluate the luminosity function
-        fiducial: whether to use the fiducial values of the model parameters instead of the posteriors
-        eta_func: which function to use for calculating the radiative efficiency, options are 'Davis', 'Logistic', 'Line', and 'Constant'
-        rad_eff: if eta_func is 'Constant', the value of the radiative efficiency to use
+        mbh_log10 : tuple
+            black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
+        lums_log10 : array
+            array of log10 luminosities at which to evaluate the luminosity function
+        redshift : float
+            redshift at which to evaluate the luminosity function
+        fiducial : bool, optional
+            whether to use the fiducial values of the model parameters instead of the posteriors. Default is False
+        eta_func : bool, optional
+            which functional form to use for calculating radiative efficiency, options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
+        rad_eff : float, optional
+            the constantvalue of the radiative efficiency to use when eta_func is 'Constant'. Default is None
 
-        Returns:
+        Returns
         --------
         lf_conv: the luminosity function calculated from the black hole mass function, accretion rate, and radiative efficiency
         """
