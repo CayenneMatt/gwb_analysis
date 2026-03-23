@@ -93,10 +93,12 @@ class Model_Info(object):
         dictionary of fiducial values for each parameter in the model
     posteriors : dict
         dictionary of median posterior values for each parameter in the model,  (!!!) calculated by get_posteriors(),
-        will be None until get_posteriors() is called
+        will be the same as defaults until get_posteriors() is called
     posteriors_err : dict
         dictionary of standard deviation of posterior values for each parameter in the model,  (!!!) calculated by get_posteriors(),
         will be the same as hardcoded default errors until get_posteriors() is called
+    fiducial_flag : bool
+        whether the posteriors are currently set to the fiducial values, used for plotting, will be False until get_posteriors() is called
     plt_labels : dict
         dictionary of plot labels associated with each parameter, used for plotting
     
@@ -122,7 +124,6 @@ class Model_Info(object):
     gsmf() :
         produce the galaxy stellar mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation,
         using either the posterior values or the fiducial values for the parameters in the model.
-    
     get_shenf() :
         retrieve the Shen et al. (2020) QLF fit at a given redshift.
     get_shend() :
@@ -178,7 +179,7 @@ class Model_Info(object):
         self.space_class = librarian.param_spaces_dict[self.param_space_name]
         self.fiducial_values = copy.deepcopy(self.space_class.DEFAULTS)
         self.posteriors = copy.deepcopy(self.space_class.DEFAULTS)
-        self.posteriors = {k: None for k in self.posteriors.keys()}
+        self.fiducial_flag = False
 
         self.posteriors_err = {'hard_time': 3,
                                'hard_sepa_init': 5,
@@ -492,7 +493,7 @@ class Model_Info(object):
             dn = np.min(gwb[valid], axis=0)
             ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
 
-    def bhmf(self, mbh_log10, redz, fiducial=False):
+    def bhmf(self, mbh_log10, redz):
         """
         Produce the black hole mass function at a given redshift.
 
@@ -506,9 +507,6 @@ class Model_Info(object):
             to np.linspace().
         redz : float
             Redshift.
-        fiducial : bool, optional
-            Whether to use the fiducial values for the GSMF and MMBulge relation rather than the posterior values.
-            If True, the fiducial values will be used, if False, the posterior values will be used. Default is False
 
         Returns
         -------
@@ -517,7 +515,7 @@ class Model_Info(object):
         bhmf : array-like
             Black hole mass function at the given redshift.
         """
-        if not fiducial:
+        if not self.fiducial_flag:
             log10_phi1 = [self.posteriors['gsmf_log10_phi_one_z0'], self.posteriors['gsmf_log10_phi_one_z1'], self.posteriors['gsmf_log10_phi_one_z2']]
             log10_phi2 = [self.posteriors['gsmf_log10_phi_two_z0'], self.posteriors['gsmf_log10_phi_two_z1'], self.posteriors['gsmf_log10_phi_two_z2']]
             log10_mstar = [self.posteriors['gsmf_log10_mstar_z0'], self.posteriors['gsmf_log10_mstar_z1'], self.posteriors['gsmf_log10_mstar_z2']]
@@ -535,7 +533,7 @@ class Model_Info(object):
                                                                     zplaw_scatter=self.posteriors['mmb_zplaw_scatter'],
                                                                     scatter_dex = self.posteriors['mmb_scatter_dex'])
             
-        if fiducial:
+        if self.fiducial_flag:
             log10_phi1 = [self.fiducial_values['gsmf_log10_phi_one_z0'], self.fiducial_values['gsmf_log10_phi_one_z1'], self.fiducial_values['gsmf_log10_phi_one_z2']]
             log10_phi2 = [self.fiducial_values['gsmf_log10_phi_two_z0'], self.fiducial_values['gsmf_log10_phi_two_z1'], self.fiducial_values['gsmf_log10_phi_two_z2']]
             log10_mstar = [self.fiducial_values['gsmf_log10_mstar_z0'], self.fiducial_values['gsmf_log10_mstar_z1'], self.fiducial_values['gsmf_log10_mstar_z2']]
@@ -608,7 +606,7 @@ class Model_Info(object):
         
         return phi_50, phi_84, phi_16
     
-    def gsmf(self, mstar_log10, redz, fiducial=False):
+    def gsmf(self, mstar_log10, redz):
         """
         Produces the galaxy stellar mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
 
@@ -622,7 +620,7 @@ class Model_Info(object):
         The galaxy stellar mass function at the given redshift
         """
 
-        if not fiducial:
+        if not self.fiducial_flag:
             log10_phi1 = [self.posteriors['gsmf_log10_phi_one_z0'], self.posteriors['gsmf_log10_phi_one_z1'], self.posteriors['gsmf_log10_phi_one_z2']]
             log10_phi2 = [self.posteriors['gsmf_log10_phi_two_z0'], self.posteriors['gsmf_log10_phi_two_z1'], self.posteriors['gsmf_log10_phi_two_z2']]
             log10_mstar = [self.posteriors['gsmf_log10_mstar_z0'], self.posteriors['gsmf_log10_mstar_z1'], self.posteriors['gsmf_log10_mstar_z2']]
@@ -631,7 +629,7 @@ class Model_Info(object):
             
             gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
             
-        if fiducial:
+        if self.fiducial_flag:
             log10_phi1 = [self.fiducial_values['gsmf_log10_phi_one_z0'], self.fiducial_values['gsmf_log10_phi_one_z1'], self.fiducial_values['gsmf_log10_phi_one_z2']]
             log10_phi2 = [self.fiducial_values['gsmf_log10_phi_two_z0'], self.fiducial_values['gsmf_log10_phi_two_z1'], self.fiducial_values['gsmf_log10_phi_two_z2']]
             log10_mstar = [self.fiducial_values['gsmf_log10_mstar_z0'], self.fiducial_values['gsmf_log10_mstar_z1'], self.fiducial_values['gsmf_log10_mstar_z2']]
@@ -687,7 +685,7 @@ class Model_Info(object):
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
 
-    def calculate_radiative_efficiency(self, zval, step=1e-3, mass=[5, 13, 100], fiducial=False, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+    def calculate_radiative_efficiency(self, zval, step=1e-3, mbh_log10=np.linspace(1, 13, 100), path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
         Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the
         luminosity function at the average redshift. This is a rough calculation that assumes that the change in the BHMF and LF between the two redshifts is solely due to accretion
@@ -701,8 +699,8 @@ class Model_Info(object):
             the redshift at which to calculate the radiative efficiency
         step : float, optional
             the step in redshift to use for calculating the change in the BHMF and LF. Default is 1e-3
-        fiducial : bool, optional
-            whether to use the fiducial values of the model parameters instead of the posteriors. Default is False
+        mbh_log10 : array-like, optional
+            the log10 of the black hole masses at which to evaluate the BHMF, default is np.linspace(1, 13, 100)
         path_to_shen_fits: str, optional
             path to the Shen+2020 fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
 
@@ -735,10 +733,10 @@ class Model_Info(object):
         dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
 
         # Mass Function
-        masses, bhmf1 = self.bhmf(mass, redz=z1, fiducial=fiducial)
-        masses, bhmf2 = self.bhmf(mass, redz=z2, fiducial=fiducial)
+        bhmf1 = self.bhmf(mbh_log10, redz=z1)
+        bhmf2 = self.bhmf(mbh_log10, redz=z2)
         
-        mdot = trapz((bhmf1 - bhmf2) * 10**masses, masses) * u.Msun / dt * f_obsc / f_acc#/ u.Mpc**3 * volume
+        mdot = trapz((bhmf1 - bhmf2) * 10**mbh_log10, mbh_log10) * u.Msun / dt * f_obsc / f_acc#/ u.Mpc**3 * volume
 
         if mdot < 0:
             print('Warning: Negative mass accreted between z = {} and z = {} for model {}.'.format(np.round(z1, 2), np.round(z2, 2), self.model_name))
@@ -758,7 +756,7 @@ class Model_Info(object):
 
         return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
-    def fdfunc(self, mbh_log10, redshift, fiducial=False, fdmin=0.03):
+    def fdfunc(self, mbh_log10, redshift, fdmin=0.03):
         """
         Fit to agn fraction as a function of stellar mass from Zou et al. (2024) https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
         Here stellar mass is inferred from black hole mass
@@ -769,8 +767,6 @@ class Model_Info(object):
             log10 of black hole mass in solar masses
         redshift : float
             redshift at which to evaluate the AGN fraction
-        fiducial : bool, optional
-            whether to use the fiducial values of the model parameters instead of the posteriors. Default is False
         fdmin : float, optional
             minimum AGN fraction to return, default is 0.03, which is the value used in Shen et al. (2020)
         Returns
@@ -781,12 +777,12 @@ class Model_Info(object):
         norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
         slope_fit = [ 0.01273298, -0.28087742, 1.5361624 ]  # [0.2927610944131739, -6.537700910036786, 35.65876956759064]
 
-        if fiducial:
+        if self.fiducial_flag:
             zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
             mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
             mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
 
-        if not fiducial:
+        if not self.fiducial_flag:
             zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
             mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
             mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
@@ -804,7 +800,7 @@ class Model_Info(object):
 
         return phi_fd
     
-    def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift, fiducial=False):
+    def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift):
         """
         Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
 
@@ -816,17 +812,14 @@ class Model_Info(object):
             log10 of black hole mass in solar masses at which to evaluate the BHMF
         redshift : float
             redshift at which to evaluate the BHMF
-        fiducial : bool, optional
-            whether to use the fiducial values for the GSMF and MMBulge relationather than the posterior values. If True, the fiducial values will be used, if False, the posterior values will be used. Default is False
-        
         Returns
         -------
         bhmf_conv : array-like
             the black hole mass function at the given redshift calculated from the GSMF and MMBulge relation
         """
-        ndens = self.gsmf(mstar_log10, redz=redshift, fiducial=True)
+        ndens = self.gsmf(mstar_log10, redz=redshift)
 
-        if fiducial:
+        if self.fiducial_flag:
             scatter = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
 
             zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
@@ -834,7 +827,7 @@ class Model_Info(object):
 
             mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
         
-        if not fiducial:
+        if not self.fiducial_flag:
             scatter = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
 
             zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
@@ -852,7 +845,7 @@ class Model_Info(object):
 
         return bhmf_conv
     
-    def bhargal(self, mbh_log10, redshift, fiducial=False):
+    def bhargal(self, mbh_log10, redshift):
         """
         Calculate black hole accretion rate as a function of black hole mass and redshift using the MMBulge relation and the GSMF.
 
@@ -867,20 +860,18 @@ class Model_Info(object):
             log10 of black hole mass in solar masses at which to evaluate the BHARGAL
         redshift : float
             redshift at which to evaluate the BHARGAL
-        fiducial : bool, optional
-            whether to use the fiducial values of the model parameters instead of the posteriors. Default is False
 
         Returns
         -------
         bhargal : array-like
             black hole accretion rate in Msun / year as a function of black hole mass and redshift
         """
-        if fiducial:
+        if self.fiducial_flag:
             zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
             mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
             mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
 
-        if not fiducial:
+        if not self.fiducial_flag:
             zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
             mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
             mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
@@ -1035,7 +1026,7 @@ class Model_Info(object):
         return l / (1 + np.exp(k * (mbh_log10 - m0))) + min
     
 
-    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, fiducial=False, eta_func = 'Davis', rad_eff=None):
+    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, eta_func = 'Davis', rad_eff=None):
         """
         Calculate luminosity from black hole mass using the accretion rate and radiative efficiency.
         The accretion rate is calculated using the MMBulge relation and the GSMF, and the radiative efficiency is calculated using one of several functions of black hole mass.
@@ -1048,8 +1039,6 @@ class Model_Info(object):
             array of log10 luminosities at which to evaluate the luminosity function
         redshift : float
             redshift at which to evaluate the luminosity function
-        fiducial : bool, optional
-            whether to use the fiducial values of the model parameters instead of the posteriors. Default is False
         eta_func : bool, optional
             which functional form to use for calculating radiative efficiency, options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
         rad_eff : float, optional
@@ -1063,17 +1052,17 @@ class Model_Info(object):
         scattereta = 0.5
         scattermdotmstar = 0.3
 
-        if fiducial:
+        if self.fiducial_flag:
             scattermmb = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
             scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
 
-        if not fiducial:
+        if not self.fiducial_flag:
             scattermmb = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
             scatter = np.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
 
-        ndens = self.bhmf(mbh_log10, redshift, fiducial=fiducial)
+        ndens = self.bhmf(mbh_log10, redshift)
 
-        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, fiducial=fiducial) * 6.3008906592961785e+25  # Msun / year to g / s
+        Mdot_mean = 10**self.bhargal(mbh_log10, redshift) * 6.3008906592961785e+25  # Msun / year to g / s
 
         if eta_func == 'Davis':
             etas = self.eta_from_mbh_davis(mbh_log10)
