@@ -125,9 +125,9 @@ class Model_Info(object):
         produce the galaxy stellar mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation,
         using either the posterior values or the fiducial values for the parameters in the model.
     get_shenf() :
-        retrieve the Shen et al. (2020) QLF fit at a given redshift.
+        retrieve the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ QLF fit at a given redshift.
     get_shend() :
-        retrieve the Shen et al. (2020) QLF data at a given redshift.
+        retrieve the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ QLF data at a given redshift.
     fdfunc() :
         calculate the AGN fraction as a function of black hole mass and redshift, fit to data in Zou et al. (2024)
     bhmf_from_gsmf() :
@@ -500,6 +500,8 @@ class Model_Info(object):
         This is calculated using holodeck by convolving a double Schechter
         GSMF with an Mbh–M_bulge relation.
 
+        :math:`M_\mathrm{BH}=\alpha_0 \left(\frac{M_{\mathrm {bulge}}}{10^{11}\ M_{\odot}}\right)^{\beta_0}`.
+
         Parameters
         ----------
         mass : tuple
@@ -644,15 +646,14 @@ class Model_Info(object):
 
     def get_shenf(self, redshift, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
-        Retrieve the fit to the Shen+2020 bolometric luminosity function at a given redshift.
+        Retrieve the fit to the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ bolometric luminosity function at a given redshift.
         
         Parameters
         -----------  
         redshift : flaot
             redshift of the fit to be used 0.2-7.0 in steps of 0.2
         path_to_shen_fits : str, optional
-            path to the Shen+2020 fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
-
+            path to the fits. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
 
         Returns
         --------
@@ -666,14 +667,14 @@ class Model_Info(object):
 
     def get_shend(self, redshift, path_to_shen_data="/Users/cayenne/Documents/Research/quasarlf/qlfdata/"):
         """
-        Retrieve the data from the Shen+2020 bolometric luminosity function at a given redshift.
+        Retrieve the data from the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_  bolometric luminosity function at a given redshift.
 
         Parameters
         -----------  
         redshift : flaot
             redshift of the fit to be used 0.2-7.0 in steps of 0.2
         path_to_shen_fits : str, optional
-            path to the Shen+2020 fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlfdata/"
+            path to the data. Default is "/Users/cayenne/Documents/Research/quasarlf/qlfdata/"
 
         Returns
         --------
@@ -702,7 +703,7 @@ class Model_Info(object):
         mbh_log10 : array-like, optional
             the log10 of the black hole masses at which to evaluate the BHMF, default is np.linspace(1, 13, 100)
         path_to_shen_fits: str, optional
-            path to the Shen+2020 fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
+            path to the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
 
         Returns
         --------
@@ -713,13 +714,12 @@ class Model_Info(object):
         Lum : float
             the total integrated luminosity at the latter redshift
 
-        Issues:
-
-        * Incorporate AGN Fraction
-        * Radiative efficiency may be mass and redshift dependent, not currently implemented
-        * Need to make sure that it is always integrating over roughly similar mass - luminosity ranges
-        * Integration only cosiders two bins and nothing in between, but should be fine for order of magnitude calculation
-        * May have a volume normalization issue
+        .. caution::
+            * Does not incorporate AGN Fraction
+            * Radiative efficiency is a constant here
+            * Need to make sure that it is always integrating over roughly similar mass - luminosity ranges
+            * Integration only cosiders two bins and nothing in between, but should be fine for order of magnitude calculation
+            * May have a volume normalization issue
 
         """
         f_obsc = 1/3  # Fraction of AGN that are not obscured and therefore observed in the LF
@@ -758,7 +758,7 @@ class Model_Info(object):
     
     def fdfunc(self, mbh_log10, redshift, fdmin=0.03):
         """
-        Fit to agn fraction as a function of stellar mass from Zou et al. (2024) https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
+        Fit to agn fraction as a function of stellar mass from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_
         Here stellar mass is inferred from black hole mass
 
         Parameters
@@ -768,7 +768,7 @@ class Model_Info(object):
         redshift : float
             redshift at which to evaluate the AGN fraction
         fdmin : float, optional
-            minimum AGN fraction to return, default is 0.03, which is the value used in Shen et al. (2020)
+            minimum AGN fraction to return, default is 0.03, which is the value used in `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_
         Returns
         -------
         phi_fd : array-like
@@ -885,19 +885,20 @@ class Model_Info(object):
     
     def eta_from_mbh_davis(self, mbh_log10):
         """
-        https://iopscience.iop.org/article/10.1088/0004-637X/728/2/98/pdf
-
-        Not redshift dependent
+        Calulate radiative efficiency as a function of black hole mass using the fit from Davis & Laor (2011).
 
         Parameters 
         ----------
         mbh_log10 : array-like
-            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
+            log10 of black hole mass in solar masses
         
         Returns
         -------
         etas : array-like
             radiative efficiency as a function of black hole mass
+
+        .. seealso::
+            `Davis & Laor (2011) <https://ui.adsabs.harvard.edu/abs/2011ApJ...728...98D/abstract>`_
         """
 
         etas = 0.089 * (10**mbh_log10/ 1e8)**0.52
@@ -906,18 +907,24 @@ class Model_Info(object):
 
     def eta_from_mbh_line_slow(self, mbh_log10):
         """
-        https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract
-        Does not change with redshift, not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
+        Less efficient version of ``eta_from_mbh_line``. Calculate radiative efficiency as a function of black hole mass using the a line fit to the data from
+        `Li et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract>`_. Two lines of different slopes with a cutoff.
+
+        ..warning::
+            Not advised to use for redshifts below 0.8.
 
         Parameters 
         ----------
         mbh_log10 : array-like
-            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
+            log10 of black hole mass in solar masses
         
         Returns
         -------
         etas : array-like
             radiative efficiency as a function of black hole mass
+
+        .. seealso::
+            `Li et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract>`_
         """
 
         m = 0.24675530275901314
@@ -936,47 +943,15 @@ class Model_Info(object):
         etas[etas > 1] = 1
         return etas
     
-    def eta_from_mbh_line_extra_slow(self, mbh_log10):
-        """
-        https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract
-        Not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
-
-        Parameters 
-        ----------
-        mbh_log10 : array-like
-            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
-        
-        Returns
-        -------
-        etas : array-like
-            radiative efficiency as a function of black hole mass
-        """
-
-        m = 0.24675530275901314
-        b = -1.4300561796413318
-
-        eta_high = m*mbh_log10 + b
-
-        msklo = np.where(mbh_log10 <= 7)[0]
-        mskhi = np.where(mbh_log10 > 7)[0]
-
-        y1 = 0
-        y2 = eta_high[msklo][-1]
-
-        x1 = 1
-        x2 = 7
-        eta_log = (y2 - y1) / (x2 - x1) * (mbh_log10[msklo] - x1) + y1
-        etas = np.append(eta_log, eta_high[mskhi])
-
-        etas[etas > 1] = 1
-        return etas
-    
     def eta_from_mbh_line(self, mbh_log10):
         """
-        https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract
-        Not advised to use for redshifts below 0.8. Two lines of different slopes with a cutoff
+        Calculate radiative efficiency as a function of black hole mass using the a line fit to the data from
+        `Li et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract>`_. Two lines of different slopes with a cutoff.
 
-        Parameters 
+        ..warning::
+            Not advised to use for redshifts below 0.8.
+
+        Parameters
         ----------
         mbh_log10 : array-like
             log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
@@ -1004,7 +979,10 @@ class Model_Info(object):
 
     def eta_from_mbh_logistic(self, mbh_log10, min=0.25, k=-1.4, m0=8.4):
         """
-        Not advised to use for redshifts below 0.8. Logistic function
+        Calulate radiative efficiency as a function of black hole mass a logistic fit to the data from `Li et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract>`_. No redshift dependence.
+        
+        ..warning::
+            Not advised to use for redshifts below 0.8.
 
         Parameters 
         ----------
