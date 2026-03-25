@@ -910,7 +910,7 @@ class Model_Info(object):
         Less efficient version of ``eta_from_mbh_line``. Calculate radiative efficiency as a function of black hole mass using the a line fit to the data from
         `Li et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract>`_. Two lines of different slopes with a cutoff.
 
-        ..warning::
+        .. warning::
             Not advised to use for redshifts below 0.8.
 
         Parameters 
