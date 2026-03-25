@@ -20,8 +20,7 @@ import copy
 # import pytensor.tensor as pt
 
 """
-.. todo::
-    Figure out how to get this to interface with PyMC
+
 """
 
 class Model_Info(object):
@@ -31,6 +30,10 @@ class Model_Info(object):
 
     .. seealso::
         `holodeck <https://github.com/nanograv/holodeck>`_
+
+    .. todo::
+        Figure out how to get this to interface with PyMC
+        Clean up slow functions
     
     Parameters
     -----------
@@ -1017,14 +1020,16 @@ class Model_Info(object):
         redshift : float
             redshift at which to evaluate the luminosity function
         eta_func : bool, optional
-            which functional form to use for calculating radiative efficiency, options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
+            which functional form to use for calculating radiative efficiency,
+            options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
         rad_eff : float, optional
             the constantvalue of the radiative efficiency to use when eta_func is 'Constant'. Default is None
 
         Returns
         --------
         lf_conv : array
-            the luminosity function calculated from the black hole mass function, accretion rate, and radiative efficiency
+            the luminosity function calculated from the black hole mass function, accretion rate,
+            and radiative efficiency
         
         Raises
         ------
