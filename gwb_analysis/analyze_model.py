@@ -20,8 +20,8 @@ import copy
 # import pytensor.tensor as pt
 
 """
-TODO:
-* Figure out how to get this to interface with PyMC
+.. todo::
+    Figure out how to get this to interface with PyMC
 """
 
 class Model_Info(object):
@@ -29,6 +29,9 @@ class Model_Info(object):
     Class to analyze gravitational wave background models generated using holodeck.
     This class automatically reads the data and assigns attributes for the GWB amplitudes, parameters, likelihoods, and frequencies.
 
+    .. seealso::
+        `holodeck <https://github.com/nanograv/holodeck>`_
+    
     Parameters
     -----------
     path : str
@@ -885,7 +888,7 @@ class Model_Info(object):
     
     def eta_from_mbh_davis(self, mbh_log10):
         """
-        Calulate radiative efficiency as a function of black hole mass using the fit from Davis & Laor (2011).
+        Calulate radiative efficiency as a function of black hole mass using the fit from `Davis & Laor (2011) <https://ui.adsabs.harvard.edu/abs/2011ApJ...728...98D/abstract>`_.
 
         Parameters 
         ----------
@@ -897,8 +900,6 @@ class Model_Info(object):
         etas : array-like
             radiative efficiency as a function of black hole mass
 
-        .. seealso::
-            `Davis & Laor (2011) <https://ui.adsabs.harvard.edu/abs/2011ApJ...728...98D/abstract>`_
         """
 
         etas = 0.089 * (10**mbh_log10/ 1e8)**0.52
@@ -922,9 +923,6 @@ class Model_Info(object):
         -------
         etas : array-like
             radiative efficiency as a function of black hole mass
-
-        .. seealso::
-            `Li et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract>`_
         """
 
         m = 0.24675530275901314
@@ -994,6 +992,7 @@ class Model_Info(object):
             steepness of the logistic function. Default is -1.4
         m0 : float, optional
             the value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 8.4
+        
         Returns
         -------
         etas : array-like
@@ -1026,6 +1025,11 @@ class Model_Info(object):
         --------
         lf_conv : array
             the luminosity function calculated from the black hole mass function, accretion rate, and radiative efficiency
+        
+        Raises
+        ------
+        ValueError
+            If eta_func is 'Constant' and rad_eff is not provided, a ValueError is raised.
         """
         scattereta = 0.5
         scattermdotmstar = 0.3
