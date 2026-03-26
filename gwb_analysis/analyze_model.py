@@ -299,6 +299,44 @@ class Model_Info(object):
             self.posteriors_err[n] = stdev
 
         return self
+
+    def plot_histogram(self, ax, param_name, nbins=20, histtype='bar', label=None, prior=False):
+        """
+        Plot a histogram of the posterior distribution for a given parameter, with optional prior distribution overlaid.
+        Parameters
+        ----------
+        ax : matplotlib axis
+            axis to which the histogram will be added
+        param_name : str
+            name of the parameter to plot, should be one of the parameter names in the model
+        nbins : int, optional
+            number of bins to use in the histogram, default is 20
+        label : str, optional
+            label for the histogram, default is None, in which case the parameter name will be used
+        prior : bool, optional
+            whether to plot the prior distribution overlaid on the histogram, default is False
+        Returns
+        -------
+        None, the histogram is added to the given axis
+        """
+        skip = None
+
+        gwb_med = np.median(self.gwb, axis=-1)
+        valid = np.any(gwb_med > 0, axis=1)
+
+        like_med = np.sum(self.ln_like[::skip, :self.nfreq], axis=1)
+        weights_med = np.exp(like_med[valid])
+
+        msk = np.where(self.param_names == param_name)[0]
+
+        xx = self.params[:, msk]
+        xx = xx[valid]
+        if prior:
+            ax.hist(xx, density=True, bins=nbins, color='grey', histtype=histtype, linestyle=self.line_style, label=label, alpha=0.5)
+        if not prior:
+            ax.hist(xx, weights=weights_med, density=True, bins=nbins, color=self.color, histtype=histtype, linestyle=self.line_style, label=label, lw=3)
+
+        return self
     
     def corner_plot(self, nbins=20, cmap='Blues'):
         """
