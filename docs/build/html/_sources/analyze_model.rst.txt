@@ -1,7 +1,0 @@
-analyze\_model module
-=====================
-
-.. automodule:: analyze_model
-   :members:
-   :undoc-members:
-   :show-inheritance:
