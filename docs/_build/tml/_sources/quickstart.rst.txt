@@ -1,0 +1,11 @@
+Quickstart
+==========
+
+Here is an example of how to read in some data and caclulate posteriors
+
+
+.. code-block:: console
+   
+   from gwb_analysis.gwb_analysis.analyze_model import Model_Info
+   model1 = Model_Info(path='path/to/file, file='model_file.npz', model_name='Model1', color='steelblue', line_style='--', threshold=2.5).get_posteriors()
+
