@@ -976,9 +976,9 @@ class Model_Info(object):
         scattermmb = mth.log10(10**self.params['mmb_scatter_dex'] * (1.0 + redshift)**self.params['mmb_zplaw_scatter'])
         scatter = mth.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
 
-        # ndens = self.bhmf(mbh_log10, redshift)
+        # scatter = 0.8
 
-        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, mth=mth) * 6.3008906592961785e+25  # Msun / year to g / s
+        # ndens = self.bhmf(mbh_log10, redshift)
 
         if eta_func == 'Davis':
             etas = self.eta_from_mbh_davis(mbh_log10)
@@ -994,6 +994,8 @@ class Model_Info(object):
                 etas = rad_eff
             else:
                 raise ValueError("Please provide a radiative efficiency value.")
+        
+        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, mth=mth) * 6.3008906592961785e+25 #* 0.1/etas # Msun / year to g / s
         
         Lmean_log10 = mth.log10(Mdot_mean * (2.9979246e10)**2 * etas)
 
