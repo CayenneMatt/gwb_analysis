@@ -36,119 +36,73 @@ class Model_Info(object):
     Parameters
     -----------
     path : str
-        path to the data, should end with a '/' and be the same as the path used to generate the data
+        Path to the data, should end with a '/' and be the same as the path used to generate the data
     file : str
-        filename of the data, should be the same as the filename used to generate the data
+        Filename of the data, should be the same as the filename used to generate the data
     model_name :  str
-        name of the model, used for plotting
+        Name of the model, used for plotting
     color : str
-        color for all plotting associated with this model
+        Color for all plotting associated with this model
     line_style : str
-        line style for all plotting associated with this model
+        Line style for all plotting associated with this model
 
     threshold : float, optional
-        minimum likelihood cutoff, used for plotting error bars on the spectrum. Default is 0.5
+        Minimum likelihood cutoff, used for plotting error bars on the spectrum. Default is 0.5
     evolving : bool, optional
-        whether the model has MMBulge evolution, used for plotting. Default is False
+        Whether the model has MMBulge evolution, used for plotting. Default is False
     stdev : float, optional
-        standard deviation of evolution parameter, used for plotting, should be None if evolving is False. Default is None
+        Standard deviation of evolution parameter, used for plotting, should be None if evolving is False. Default is None
     nfreq : int, optional
-        number of frequency bins to use in likelihood calculation, 5 is recommended. Default is 5
+        Number of frequency bins to use in likelihood calculation, 5 is recommended. Default is 5
     param_space_name : str, optional
-        name of parameter space, should be the same as the parameter space used to generate the data. Default is 'PS_Astro_Strong_All'
+        Name of parameter space, should be the same as the parameter space used to generate the data. Default is 'PS_Astro_Strong_All'
 
     Attributes
     -----------
     path : str
-        path to the data specified as an argument
+        Path to the data specified as an argument
     file : str
-        filename of the data specified as an argument
+        Filename of the data specified as an argument
     param_space_name : str
-        name of parameter space specified as an argument
+        Name of parameter space specified as an argument
     gwb : array-like
         GWB amplitudes for each model, shape is (nsamples, nrealizations, nfreqs)
     param_names : array-like
-        names of parameters in the model
+        Names of parameters in the model
     params : array-like
-        parameter sample associated with each model
+        Parameter sample associated with each model
     ln_like : array-like
-        log-likelihood of each model
+        Log-likelihood of each model
     freqs : array-like
-        frequencies at which the amplitudes are calculated
+        Frequencies at which the amplitudes are calculated
     model_name : str
-        model name specified as an argument
+        Model name specified as an argument
     color :  str
-        color for all plotting associated with this model specified as an argument
+        Color for all plotting associated with this model specified as an argument
     line_style : str
-        line style for all plotting associated with this model specified as an argument
+        Line style for all plotting associated with this model specified as an argument
     threshold : float
         minimum likelihood cutoff specified as an argument
     evolving : bool
-        whether the model has MMBulge evolution specified as an argument
+        Whether the model has MMBulge evolution specified as an argument
     stdev : float
-        standard deviation of evolution parameter specified as an argument
+        Standard deviation of evolution parameter specified as an argument
     nfreq : int
-        number of frequency bins to use in likelihood calculation specified as an argument
+        Number of frequency bins to use in likelihood calculation specified as an argument
     idcs : array-like
-        index of evolution parameter, None if evolving is False
+        Index of evolution parameter, None if evolving is False
     space_class : class
-        class of the parameter space, used to get priors and fiducial values
+        Class of the parameter space, used to get priors and fiducial values
     fiducial_values:  dict
-        dictionary of fiducial values for each parameter in the model
-    posteriors : dict
-        dictionary of median posterior values for each parameter in the model,  (!!!) calculated by get_posteriors(),
-        will be the same as defaults until get_posteriors() is called
-    posteriors_err : dict
-        dictionary of standard deviation of posterior values for each parameter in the model,  (!!!) calculated by get_posteriors(),
-        will be the same as hardcoded default errors until get_posteriors() is called
-    fiducial_flag : bool
-        whether the posteriors are currently set to the fiducial values, used for plotting, will be False until get_posteriors() is called
+        Dictionary of fiducial values for each parameter in the model
+    params : dict
+        Dictionary of median posterior values for each parameter in the model,
+        will be the same as fiducial unless get_posteriors() is called
+    params_err : dict
+        Dictionary of standard deviation of posterior values for each parameter in the model,
+        will be the same as fiducial values unless get_posteriors() is called
     plt_labels : dict
-        dictionary of plot labels associated with each parameter, used for plotting
-    
-    Methods
-    --------
-    get_priors() :
-        returns parameter names and default values from the prior parameter space.
-    get_posteriors() :
-        get the median of the posterior distributions for each parameter in the model and store them in the posteriors attribute.
-    corner_plot() :
-        Old and slow, but tested version of corner plot, will be removed in favor of corner_plot_fast() pending appropriate testing.
-    corner_plot_fast() :
-        faster version of corner plot, should produce the same plot as corner_plot() but much faster, recommended over corner_plot() pending appropriate testing.
-    add_spectrum() :
-        add the spectrum of the model to a given axis, with optional error bars and label.
-    bhmf() :
-        produce the black hole mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation,
-        using either the posterior values or the fiducial values for the parameters in the model.
-    bhmf_err() :
-        produce the error on the black hole mass function at
-        a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation, using either the posterior values or the
-        fiducial values for the parameters in the model, and using the standard deviation of the posterior values as the error on each parameter to calculate the error on the BHMF.
-    gsmf() :
-        produce the galaxy stellar mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation,
-        using either the posterior values or the fiducial values for the parameters in the model.
-    get_shenf() :
-        retrieve the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ QLF fit at a given redshift.
-    get_shend() :
-        retrieve the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ QLF data at a given redshift.
-    fdfunc() :
-        calculate the AGN fraction as a function of black hole mass and redshift, fit to data in Zou et al. (2024)
-    bhmf_from_gsmf() :
-        calculate the black hole mass function from the galaxy stellar mass function using the MMBulge relation
-    calculate_radiative_efficiency() :
-        calculate the radiative efficiency as a function of black hole mass at a given redshift.
-    bhargal() :
-        calculate black hole accretion rate as a function of black hole mass and redshift.
-    eta_from_mbh_davis() :
-        calculate radiative efficiency using the relation from Davis & Laor (2011) as a function of black hole mass.
-    eta_from_mbh_line() :
-        calculate radiative efficiency as a funciton of black hole mass using a linear fit to Li et al. (2012) data.
-    eta_from_mbh_logistic() :
-        calculate radiative efficiency as a function of black hole mass using a logistic fit to Li et al. (2012) data.
-    L_from_Mbh_via_mdot_eta_func() :
-        calculate AGN luminosity from black hole mass and accretion rate, using a specified function for the radiative efficiency.
-
+        Dictionary of plot labels associated with each parameter, used for plotting
     """
     # Attributes
     def __init__(self, path, file, model_name, color, line_style, threshold=0.5, evolving=False, stdev=None, nfreq=5, param_space_name = 'PS_Astro_Strong_All'):
@@ -161,7 +115,7 @@ class Model_Info(object):
         dat = np.load(self.path+self.file)
         self.gwb = dat['gwb']  # GWB amplitudes for each model
         self.param_names = dat['names']  # Names of parameters in the model
-        self.params = dat['params']  # Parameter sample associated with each model
+        self.param_samples = dat['params']  # Parameter sample associated with each model
         self.ln_like = dat['ln_like']  # Log-likelihood of each model
         self.freqs = np.array(dat['fobs_cents'])  # Frequencies for all models
 
@@ -182,10 +136,9 @@ class Model_Info(object):
         # Dictionary of priors to be modified by get_posteriors(), note that LM* models have different priors, but currently sample every parameter.
         self.space_class = librarian.param_spaces_dict[self.param_space_name]
         self.fiducial_values = copy.deepcopy(self.space_class.DEFAULTS)
-        self.posteriors = copy.deepcopy(self.space_class.DEFAULTS)
-        self.fiducial_flag = False
+        self.params = copy.deepcopy(self.space_class.DEFAULTS)
 
-        self.posteriors_err = {'hard_time': 3,
+        self.fiducial_values_err = {'hard_time': 3,
                                'hard_sepa_init': 5,
                                 'hard_rchar': 3.0,
                                 'hard_gamma_outer': 0.5,
@@ -220,6 +173,8 @@ class Model_Info(object):
                                 'bf_frac_hi': 1.0,
                                 'bf_mstar_crit': 0.5,
                                 'bf_width_dex': 0.1}
+        
+        self.params_err = copy.deepcopy(self.fiducial_values_err)
 
         # Dictionary of plot labels associated with each parameter
         self.plt_labels = {'hard_time'           : r"$\tau_\mathrm{f}$",
@@ -263,7 +218,7 @@ class Model_Info(object):
         
     def get_priors(self):
         """
-        returns parameter names and sampled distributions from the prior parameter space
+        Returns parameter names and sampled distributions from the prior parameter space
         
         Sampled distribution of parameter i: space.param_samples.transpose()[i]
         Name of parameter i: space.param_names[i]
@@ -288,13 +243,13 @@ class Model_Info(object):
         weights_med = np.exp(like_med[valid])
 
         for jj, n in enumerate(self.param_names):
-            xx = self.params[:, jj]
+            xx = self.param_samples[:, jj]
             xx = xx[valid]
             rv = stats.rv_histogram(np.histogram(xx, weights=weights_med))
             median = rv.median()
             stdev = rv.std()
-            self.posteriors[n] = median
-            self.posteriors_err[n] = stdev
+            self.params[n] = median
+            self.params_err[n] = stdev
 
         return self
 
@@ -329,7 +284,7 @@ class Model_Info(object):
 
         msk = np.where(self.param_names == param_name)[0]
 
-        xx = self.params[:, msk]
+        xx = self.param_samples[:, msk]
         xx = xx[valid]
         if prior:
             ax.hist(xx, density=True, bins=nbins, color='grey', histtype=histtype, linestyle=self.line_style, label=label, alpha=0.5)
@@ -345,9 +300,9 @@ class Model_Info(object):
         Parameters
         ----------
         nbins : int, optional
-            number of bins to use in the histograms and contour plots. Default is 20
+            Number of bins to use in the histograms and contour plots. Default is 20
         cmap : str, optional
-            name of matplotlib colormap to use for the points in the corner plot. Default is 'Blues'
+            Name of matplotlib colormap to use for the points in the corner plot. Default is 'Blues'
 
         Returns
         -------
@@ -356,7 +311,7 @@ class Model_Info(object):
         print('Depricated, use corner_plot_fast() instead.')
 
         npars = len(self.param_names)
-        nsamp, npars = self.params.shape
+        nsamp, npars = self.param_samples.shape
 
         gwb_med = np.median(self.gwb, axis=-1)
 
@@ -384,7 +339,7 @@ class Model_Info(object):
         edges = []
         extrema = []
         for ii in range(npars):
-            xx = self.params[:, ii][valid]
+            xx = self.param_samples[:, ii][valid]
             extr = holo.utils.minmax(xx)
             extrema.append(extr)
             ee = np.linspace(*extr, nbins)
@@ -402,7 +357,7 @@ class Model_Info(object):
                 ax.set_visible(False)
                 continue
             ax.grid(True, alpha=0.25)
-            xx = self.params[:, jj][sort_idx[valid]]
+            xx = self.param_samples[:, jj][sort_idx[valid]]
 
             if jj > 0 and ii != jj:
                 ax.set_yticklabels(['' for ii in ax.get_yticks()])
@@ -415,7 +370,7 @@ class Model_Info(object):
                 ax.yaxis.set_ticks_position('right')
                 continue
 
-            yy = self.params[:, ii][sort_idx[valid]]
+            yy = self.param_samples[:, ii][sort_idx[valid]]
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
 
@@ -427,9 +382,9 @@ class Model_Info(object):
         Parameters
         ----------
         nbins : int, optional
-            number of bins to use in the histograms and contour plots. Default is 20
+            Number of bins to use in the histograms and contour plots. Default is 20
         cmap : str, optional
-            name of matplotlib colormap to use for the points in the corner plot. Default is 'Blues'
+            Name of matplotlib colormap to use for the points in the corner plot. Default is 'Blues'
 
         Returns
         -------
@@ -437,7 +392,7 @@ class Model_Info(object):
         """
 
         npars = len(self.param_names)
-        nsamp, npars = self.params.shape
+        nsamp, npars = self.param_samples.shape
 
         gwb_med = np.median(self.gwb, axis=-1)
 
@@ -471,7 +426,7 @@ class Model_Info(object):
         edges = []
         extrema = []
         for ii in range(npars):
-            xx = self.params[:, ii][valid]
+            xx = self.param_samples[:, ii][valid]
             extr = holo.utils.minmax(xx)
             extrema.append(extr)
             ee = np.linspace(*extr, nbins)
@@ -488,7 +443,7 @@ class Model_Info(object):
         for (ii, jj), ax in axes.items():
             ax.grid(True, alpha=0.25)
 
-            xx = self.params[:, jj][sort_idx[valid]]
+            xx = self.param_samples[:, jj][sort_idx[valid]]
 
             if jj > 0 and ii != jj:
                 ax.tick_params(labelleft=False)
@@ -501,7 +456,7 @@ class Model_Info(object):
                 ax.yaxis.set_ticks_position('right')
                 continue
 
-            yy = self.params[:, ii][sort_idx[valid]]
+            yy = self.param_samples[:, ii][sort_idx[valid]]
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
     
@@ -511,14 +466,14 @@ class Model_Info(object):
 
         Parameters
         ----------
-        ax : matplotlib axis
+        ax : Matplotlib axis
             axis to which the spectrum will be added
         lw : float, optional
-            line width of the spectrum, default is 3
+            Line width of the spectrum, default is 3
         errorbars : bool, optional
-            whether to add error bars to the spectrum, default is False
+            Whether to add error bars to the spectrum, default is False
         label : str, optional
-            label for the spectrum, default is None, in which case the model name will be used
+            Label for the spectrum, default is None, in which case the model name will be used
 
         Returns
         -------
@@ -538,62 +493,39 @@ class Model_Info(object):
             ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
 
     def bhmf(self, mbh_log10, redz):
-        """
-        Produce the black hole mass function at a given redshift.
+        r"""
+        Produce the black hole mass function at a given redshift. This is calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation
+        :math:`M_\mathrm{BH} = \alpha_0 \left(\frac{M_{\mathrm{bulge}}}{10^{11}\, M_{\odot}}\right)^{\beta_0}`
 
-        This is calculated using holodeck by convolving a double Schechter
-        GSMF with an Mbh–M_bulge relation.
-
-        :math:`M_\mathrm{BH}=\alpha_0 \left(\frac{M_{\mathrm {bulge}}}{10^{11}\ M_{\odot}}\right)^{\beta_0}`.
 
         Parameters
         ----------
-        mass : tuple
-            (min, max, npoints) in log10(Mbh/Msol), used as arguments
-            to np.linspace().
+        mass : array
+            Black hole masses at which the BHMF is evaluated, in log10(Mbh/Msol)
         redz : float
-            Redshift.
+            Redshift at which the BHMF is evaluated
 
         Returns
         -------
-        masses : tuple
-            Masses at which the BHMF is evaluated, in log10(Mbh/Msol).
         bhmf : array-like
-            Black hole mass function at the given redshift.
+            Black hole mass function at the given redshift
         """
-        if not self.fiducial_flag:
-            log10_phi1 = [self.posteriors['gsmf_log10_phi_one_z0'], self.posteriors['gsmf_log10_phi_one_z1'], self.posteriors['gsmf_log10_phi_one_z2']]
-            log10_phi2 = [self.posteriors['gsmf_log10_phi_two_z0'], self.posteriors['gsmf_log10_phi_two_z1'], self.posteriors['gsmf_log10_phi_two_z2']]
-            log10_mstar = [self.posteriors['gsmf_log10_mstar_z0'], self.posteriors['gsmf_log10_mstar_z1'], self.posteriors['gsmf_log10_mstar_z2']]
-            alpha1 = self.posteriors['gsmf_alpha_one']
-            alpha2 = self.posteriors['gsmf_alpha_two']
+        log10_phi1 = [self.params['gsmf_log10_phi_one_z0'], self.params['gsmf_log10_phi_one_z1'], self.params['gsmf_log10_phi_one_z2']]
+        log10_phi2 = [self.params['gsmf_log10_phi_two_z0'], self.params['gsmf_log10_phi_two_z1'], self.params['gsmf_log10_phi_two_z2']]
+        log10_mstar = [self.params['gsmf_log10_mstar_z0'], self.params['gsmf_log10_mstar_z1'], self.params['gsmf_log10_mstar_z2']]
+        alpha1 = self.params['gsmf_alpha_one']
+        alpha2 = self.params['gsmf_alpha_two']
+        
+        gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+        
+        zplaw_amp = self.params['mmb_zplaw'] if 'mmb_zplaw' in self.params.keys() else self.params['mmb_zplaw_amp']
             
-            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
-            
-            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
-                
-            mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.posteriors['mmb_mamp_log10'],
-                                                                    mplaw = self.posteriors['mmb_plaw'],
-                                                                    zplaw_amp=zplaw_amp,
-                                                                    zplaw_slope=self.posteriors['mmb_zplaw_slope'],
-                                                                    zplaw_scatter=self.posteriors['mmb_zplaw_scatter'],
-                                                                    scatter_dex = self.posteriors['mmb_scatter_dex'])
-            
-        if self.fiducial_flag:
-            log10_phi1 = [self.fiducial_values['gsmf_log10_phi_one_z0'], self.fiducial_values['gsmf_log10_phi_one_z1'], self.fiducial_values['gsmf_log10_phi_one_z2']]
-            log10_phi2 = [self.fiducial_values['gsmf_log10_phi_two_z0'], self.fiducial_values['gsmf_log10_phi_two_z1'], self.fiducial_values['gsmf_log10_phi_two_z2']]
-            log10_mstar = [self.fiducial_values['gsmf_log10_mstar_z0'], self.fiducial_values['gsmf_log10_mstar_z1'], self.fiducial_values['gsmf_log10_mstar_z2']]
-            alpha1 = self.fiducial_values['gsmf_alpha_one']
-            alpha2 = self.fiducial_values['gsmf_alpha_two']
-            
-            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
-            
-            mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.fiducial_values['mmb_mamp_log10'],
-                                                                mplaw = self.fiducial_values['mmb_plaw'],
-                                                                zplaw_amp=self.fiducial_values['mmb_zplaw_amp'],
-                                                                zplaw_slope=self.fiducial_values['mmb_zplaw_slope'],
-                                                                zplaw_scatter=self.fiducial_values['mmb_zplaw_scatter'],
-                                                                scatter_dex = self.fiducial_values['mmb_scatter_dex'])
+        mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.params['mmb_mamp_log10'],
+                                                                mplaw = self.params['mmb_plaw'],
+                                                                zplaw_amp=zplaw_amp,
+                                                                zplaw_slope=self.params['mmb_zplaw_slope'],
+                                                                zplaw_scatter=self.params['mmb_zplaw_scatter'],
+                                                                scatter_dex = self.params['mmb_scatter_dex'])
         
         return gsmf.mbh_mass_func_conv(10**mbh_log10 * MSOL, redz, mmbulge=mmb, scatter=True)
     
@@ -604,28 +536,27 @@ class Model_Info(object):
         Parameters
         -----------
         mass : array
-            black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)
+            Black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)
         redz : float
-            redshift
+            Redshift at which the BHMF is evaluated
 
         Returns
         --------
         bhmf_median : array
-            the median black hole mass function at the given redshift, calculated using the median posterior values for the parameters in the model
+            The median black hole mass function at the given redshift, calculated using the median posterior values for the parameters in the model
         bhmf_upper_bound : array
-            the 84th percentile of the black hole mass function at the given redshift
+            The 84th percentile of the black hole mass function at the given redshift
         bhmf_lower_bound : array
-            the 16th percentile of the black hole mass function at the given redshift
-        TODO:
-        * Add fiducial functionality
+            The 16th percentile of the black hole mass function at the given redshift
         """
         # masses = np.linspace(mass[0], mass[1], mass[2])
         
         self.bhmf_dict = copy.deepcopy(self.space_class.DEFAULTS)
-        assert self.posteriors != self.fiducial_values, "Posteriors have not been calculated yet. Run get_posteriors() before calculating error bars on the BHMF."
+
+        # assert self.params != self.fiducial_values, "Posteriors have not been calculated yet. Run get_posteriors() before calculating error bars on the BHMF."
 
         for par in self.bhmf_dict.keys():
-            self.bhmf_dict[par] = np.array(np.random.normal(self.posteriors[par], scale=self.posteriors_err[par], size=ndraws))
+            self.bhmf_dict[par] = np.array(np.random.normal(self.params[par], scale=self.params_err[par], size=ndraws))
 
         phis = []
         for j in range(ndraws):
@@ -637,7 +568,7 @@ class Model_Info(object):
 
             gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
             
-            zplaw_amp = self.bhmf_dict['mmb_zplaw'][j] if 'mmb_zplaw' in self.param_names else self.bhmf_dict['mmb_zplaw_amp'][j]
+            zplaw_amp = self.bhmf_dict['mmb_zplaw'][j] if 'mmb_zplaw' in self.params.keys() else self.bhmf_dict['mmb_zplaw_amp'][j]
 
             mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.bhmf_dict['mmb_mamp_log10'][j],
                                                             mplaw = self.bhmf_dict['mmb_plaw'][j],
@@ -658,31 +589,24 @@ class Model_Info(object):
 
         Parameters
         -----------
-        mass : tuple (min, max, npoints) in log10(Msun/Msol) to be used as arguments in np.linspace()
-        redz : redshift
+        mass : array
+            Black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)
+        redz : float
+            Redshift at which the BHMF is evaluated
         
         Returns
         --------
-        The galaxy stellar mass function at the given redshift
+        gsmf : array
+            The galaxy stellar mass function at the given redshift
         """
 
-        if not self.fiducial_flag:
-            log10_phi1 = [self.posteriors['gsmf_log10_phi_one_z0'], self.posteriors['gsmf_log10_phi_one_z1'], self.posteriors['gsmf_log10_phi_one_z2']]
-            log10_phi2 = [self.posteriors['gsmf_log10_phi_two_z0'], self.posteriors['gsmf_log10_phi_two_z1'], self.posteriors['gsmf_log10_phi_two_z2']]
-            log10_mstar = [self.posteriors['gsmf_log10_mstar_z0'], self.posteriors['gsmf_log10_mstar_z1'], self.posteriors['gsmf_log10_mstar_z2']]
-            alpha1 = self.posteriors['gsmf_alpha_one']
-            alpha2 = self.posteriors['gsmf_alpha_two']
-            
-            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
-            
-        if self.fiducial_flag:
-            log10_phi1 = [self.fiducial_values['gsmf_log10_phi_one_z0'], self.fiducial_values['gsmf_log10_phi_one_z1'], self.fiducial_values['gsmf_log10_phi_one_z2']]
-            log10_phi2 = [self.fiducial_values['gsmf_log10_phi_two_z0'], self.fiducial_values['gsmf_log10_phi_two_z1'], self.fiducial_values['gsmf_log10_phi_two_z2']]
-            log10_mstar = [self.fiducial_values['gsmf_log10_mstar_z0'], self.fiducial_values['gsmf_log10_mstar_z1'], self.fiducial_values['gsmf_log10_mstar_z2']]
-            alpha1 = self.fiducial_values['gsmf_alpha_one']
-            alpha2 = self.fiducial_values['gsmf_alpha_two']
-            
-            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+        log10_phi1 = [self.params['gsmf_log10_phi_one_z0'], self.params['gsmf_log10_phi_one_z1'], self.params['gsmf_log10_phi_one_z2']]
+        log10_phi2 = [self.params['gsmf_log10_phi_two_z0'], self.params['gsmf_log10_phi_two_z1'], self.params['gsmf_log10_phi_two_z2']]
+        log10_mstar = [self.params['gsmf_log10_mstar_z0'], self.params['gsmf_log10_mstar_z1'], self.params['gsmf_log10_mstar_z2']]
+        alpha1 = self.params['gsmf_alpha_one']
+        alpha2 = self.params['gsmf_alpha_two']
+        
+        gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
             
         
         return gsmf(10**mstar_log10 * MSOL, redz)
@@ -695,16 +619,16 @@ class Model_Info(object):
         Parameters
         -----------  
         redshift : flaot
-            redshift of the fit to be used 0.2-7.0 in steps of 0.2
+            Redshift of the fit to be used 0.2-7.0 in steps of 0.2
         path_to_shen_fits : str, optional
-            path to the fits. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
+            Path to the fits. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
 
         Returns
         --------
         x : array
-            the x-axis values, luminosity in log10(L/erg/s)
+            The x-axis values, luminosity in log10(L/erg/s)
         y : array
-            fit to log phiL
+            Fit to log phiL
         """
         dat = np.genfromtxt(path_to_shen_fits+"bolometric_fit_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
@@ -716,16 +640,16 @@ class Model_Info(object):
         Parameters
         -----------  
         redshift : flaot
-            redshift of the fit to be used 0.2-7.0 in steps of 0.2
+            Redshift of the fit to be used 0.2-7.0 in steps of 0.2
         path_to_shen_fits : str, optional
-            path to the data. Default is "/Users/cayenne/Documents/Research/quasarlf/qlfdata/"
+            Path to the data. Default is "/Users/cayenne/Documents/Research/quasarlf/qlfdata/"
 
         Returns
         --------
         x : array
-            the x-axis values, luminosity in log10(L/erg/s)
+            The x-axis values, luminosity in log10(L/erg/s)
         y : array
-            data for log phiL
+            Data for log phiL
         """
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
@@ -741,22 +665,22 @@ class Model_Info(object):
         Parameters
         -----------
         zval : float
-            the redshift at which to calculate the radiative efficiency
+            The redshift at which to calculate the radiative efficiency
         mbh_log10 : array-like
-            the log10 of the black hole masses at which to evaluate the BHMF.
+            The log10 of the black hole masses at which to evaluate the BHMF.
         step : float, optional
-            the step in redshift to use for calculating the change in the BHMF and LF. Default is 1e-3
+            The step in redshift to use for calculating the change in the BHMF and LF. Default is 1e-3
         path_to_shen_fits: str, optional
-            path to the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
+            Path to the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
 
         Returns
         --------
         erad : float
-            radiative efficiency between the two redshifts
+            Radiative efficiency between the two redshifts
         mdot : float
-            the total integrated mass density gain between those redshifts (scaled)
+            The total integrated mass density gain between those redshifts (scaled)
         Lum : float
-            the total integrated luminosity at the latter redshift
+            The total integrated luminosity at the latter redshift
 
         .. warning::
             * Does not incorporate AGN Fraction
@@ -802,17 +726,18 @@ class Model_Info(object):
     
     def fdfunc(self, mbh_log10, redshift, fdmin=0.0):
         """
-        Fit to agn fraction as a function of stellar mass from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_
+        Fit to agn fraction as a function of stellar mass from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
         Here stellar mass is inferred from black hole mass
 
         Parameters
         ----------
         mbh_log10 : array-like
-            log10 of black hole mass in solar masses
+            Log10 of black hole mass in solar masses
         redshift : float
-            redshift at which to evaluate the AGN fraction
+            Redshift at which to evaluate the AGN fraction
         fdmin : float, optional
-            minimum AGN fraction to return, default is 0.03, which is the value used in `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_
+            Minimum AGN fraction to return, default is 0.03, which is the value used in `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_
+        
         Returns
         -------
         phi_fd : array-like
@@ -821,15 +746,9 @@ class Model_Info(object):
         norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
         slope_fit = [ 0.01273298, -0.28087742, 1.5361624 ]  # [0.2927610944131739, -6.537700910036786, 35.65876956759064]
 
-        if self.fiducial_flag:
-            zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
-            mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
-            mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
-
-        if not self.fiducial_flag:
-            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
-            mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
-            mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
+        zplaw_amp = self.params['mmb_zplaw'] if 'mmb_zplaw' in self.params.keys() else self.params['mmb_zplaw_amp']
+        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+        mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
 
         mstar_log10 = (mbh_log10 - np.log10(mamp_z)) / mplaw_z + 11
 
@@ -851,33 +770,25 @@ class Model_Info(object):
         Parameters
         ----------
         mstar_log10 : array-like
-            log10 of stellar mass in solar masses at which to evaluate the BHMF
+            Log10 of stellar mass in solar masses at which to evaluate the BHMF
         mbh_log10 : array-like
-            log10 of black hole mass in solar masses at which to evaluate the BHMF
+            Log10 of black hole mass in solar masses at which to evaluate the BHMF
         redshift : float
-            redshift at which to evaluate the BHMF
+            Redshift at which to evaluate the BHMF
+       
         Returns
         -------
         bhmf_conv : array-like
-            the black hole mass function at the given redshift calculated from the GSMF and MMBulge relation
+            The black hole mass function at the given redshift calculated from the GSMF and MMBulge relation
         """
         ndens = self.gsmf(mstar_log10, redz=redshift)
 
-        if self.fiducial_flag:
-            scatter = np.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
+        scatter = np.log10(10**self.params['mmb_scatter_dex'] * (1.0 + redshift)**self.params['mmb_zplaw_scatter'])
 
-            zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
-            mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+        zplaw_amp = self.params['mmb_zplaw'] if 'mmb_zplaw' in self.params.keys() else self.params['mmb_zplaw_amp']
+        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
 
-            mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
-        
-        if not self.fiducial_flag:
-            scatter = np.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
-
-            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
-            mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
-
-            mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
+        mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
 
         logMbh_mean = np.log10(mamp_z) + mplaw_z * (mstar_log10 - 11.0)
 
@@ -894,35 +805,31 @@ class Model_Info(object):
         Calculate black hole accretion rate as a function of black hole mass and redshift using the MMBulge relation and the GSMF.
 
         The function in the paper is in terms of stellar mass, but we can use the MMBulge relation to convert it to a function of black hole mass.
-        Fit from https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics
+        Fit from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
+        
         Msun / year
         Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)
 
         Parameters
         ----------
         mbh_log10 : array-like
-            log10 of black hole mass in solar masses at which to evaluate the BHARGAL
+            Log10 of black hole mass in solar masses at which to evaluate the BHARGAL
         redshift : float
-            redshift at which to evaluate the BHARGAL
+            Redshift at which to evaluate the BHARGAL
         mth : module, optional
-            module to use for mathematical functions, default is numpy.
+            Module to use for mathematical functions, default is numpy.
 
         Returns
         -------
         bhargal : array-like
-            black hole accretion rate in Msun / year as a function of black hole mass and redshift
+            Black hole accretion rate in Msun / year as a function of black hole mass and redshift
         """
         if mth is None:
             import numpy as mth
-        if self.fiducial_flag:
-            zplaw_amp = self.fiducial_values['mmb_zplaw_amp']
-            mamp_z = 10**self.fiducial_values['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
-            mplaw_z = self.fiducial_values['mmb_plaw'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_slope']
-
-        if not self.fiducial_flag:
-            zplaw_amp = self.posteriors['mmb_zplaw'] if 'mmb_zplaw' in self.param_names else self.posteriors['mmb_zplaw_amp']
-            mamp_z = 10**self.posteriors['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
-            mplaw_z = self.posteriors['mmb_plaw'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_slope']
+        
+        zplaw_amp = self.params['mmb_zplaw'] if 'mmb_zplaw' in self.params.keys() else self.params['mmb_zplaw_amp']
+        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+        mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
 
         mstar_log10 = (mbh_log10 - mth.log10(mamp_z)) / mplaw_z + 11
 
@@ -938,16 +845,14 @@ class Model_Info(object):
         Parameters 
         ----------
         mbh_log10 : array-like
-            log10 of black hole mass in solar masses
+            Log10 of black hole mass in solar masses
         mth : module, optional
-            module to use for mathematical functions, default is numpy.
-
+            Module to use for mathematical functions, default is numpy.
         
         Returns
         -------
         etas : array-like
-            radiative efficiency as a function of black hole mass
-
+            Radiative efficiency as a function of black hole mass
         """
 
         etas = 0.089 * (10**mbh_log10/ 1e8)**0.52
@@ -965,15 +870,15 @@ class Model_Info(object):
         Parameters
         ----------
         mbh_log10 : array-like
-            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
+            Log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
         mth : module, optional
-            module to use for mathematical functions, default is numpy.
+            Module to use for mathematical functions, default is numpy.
 
         
         Returns
         -------
         etas : array-like
-            radiative efficiency as a function of black hole mass
+            Radiative efficiency as a function of black hole mass
         """
 
         # if mth is None:
@@ -1004,21 +909,21 @@ class Model_Info(object):
         Parameters 
         ----------
         mbh_log10 : array-like
-            log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
+            Log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
         min : float, optional
-            minimum value of the logistic function, default is 0.25. Default is 0.25
+            Minimum value of the logistic function, default is 0.25. Default is 0.25
         k : float, optional
-            steepness of the logistic function. Default is -1.4
+            Stepth of the logistic function. Default is -1.4
         m0 : float, optional
-            the value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 8.4
+            The value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 8.4
         mth : module, optional
-            module to use for mathematical functions, default is numpy.
+            Module to use for mathematical functions, default is numpy.
 
         
         Returns
         -------
         etas : array-like
-            radiative efficiency as a function of black hole mass
+            Radiative efficiency as a function of black hole mass
         """
 
         if mth is None:
@@ -1036,24 +941,24 @@ class Model_Info(object):
         Parameters
         -----------
         mbh_log10 : array
-            black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
+            Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
         lums_log10 : array
-            array of log10 luminosities at which to evaluate the luminosity function
+            Array of log10 luminosities at which to evaluate the luminosity function
         redshift : float
-            redshift at which to evaluate the luminosity function
+            Redshift at which to evaluate the luminosity function
         eta_func : bool, optional
-            which functional form to use for calculating radiative efficiency,
+            Which functional form to use for calculating radiative efficiency,
             options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
         rad_eff : float, optional
-            the constantvalue of the radiative efficiency to use when eta_func is 'Constant'. Default is None
+            The constantvalue of the radiative efficiency to use when eta_func is 'Constant'. Default is None
         mth : module, optional
-            module to use for mathematical functions, default is numpy.
+            Module to use for mathematical functions, default is numpy.
 
 
         Returns
         --------
         lf_conv : array
-            the luminosity function calculated from the black hole mass function, accretion rate,
+            The luminosity function calculated from the black hole mass function, accretion rate,
             and radiative efficiency
         
         Raises
@@ -1065,23 +970,15 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        # scattereta = 0.5
-        # scattermdotmstar = 0.3
-
         scattereta = 0.5
         scattermdotmstar = 0.3
 
-        if self.fiducial_flag:
-            scattermmb = mth.log10(10**self.fiducial_values['mmb_scatter_dex'] * (1.0 + redshift)**self.fiducial_values['mmb_zplaw_scatter'])
-            scatter = mth.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
+        scattermmb = mth.log10(10**self.params['mmb_scatter_dex'] * (1.0 + redshift)**self.params['mmb_zplaw_scatter'])
+        scatter = mth.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
 
-        if not self.fiducial_flag:
-            scattermmb = mth.log10(10**self.posteriors['mmb_scatter_dex'] * (1.0 + redshift)**self.posteriors['mmb_zplaw_scatter'])
-            scatter = mth.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
+        # scatter = 0.8
 
         # ndens = self.bhmf(mbh_log10, redshift)
-
-        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, mth=mth) * 6.3008906592961785e+25  # Msun / year to g / s
 
         if eta_func == 'Davis':
             etas = self.eta_from_mbh_davis(mbh_log10)
@@ -1098,6 +995,8 @@ class Model_Info(object):
             else:
                 raise ValueError("Please provide a radiative efficiency value.")
         
+        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, mth=mth) * 6.3008906592961785e+25 #* 0.1/etas # Msun / year to g / s
+        
         Lmean_log10 = mth.log10(Mdot_mean * (2.9979246e10)**2 * etas)
 
         inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
@@ -1105,8 +1004,8 @@ class Model_Info(object):
 
         fduty = self.fdfunc(mbh_log10, redshift)
 
-        dlogL = lums_log10[1] - lums_log10[0]
-        lf_conv = mth.dot(K, ndens * fduty) * dlogL
+        dlogM = mbh_log10[1] - mbh_log10[0]
+        lf_conv = mth.dot(K, ndens * fduty) * dlogM
 
         return lf_conv
 
@@ -1117,7 +1016,7 @@ class Model_Info(object):
         Parameters
         ----------
         mbh_log10 : array
-            black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
+            Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
         knee : float
             The turnover point of the Schechter function
         norm : float
@@ -1129,9 +1028,12 @@ class Model_Info(object):
         hilam : float
             Upper limit of allowable Eddington ratios
         mth : module, optional
-            module to use for mathematical functions, default is numpy.
+            Module to use for mathematical functions, default is numpy.
 
-        
+        Returns
+        -------
+        loglam_M : array
+            Log10 of the Eddington fraction as a function of black hole mass. Functional form is a Schechter function with the given knee, norm, and slope, and is clipped to be between lowlam and hilam for numerical reasons.
         """
         if mth is None:
             import numpy as mth
@@ -1147,7 +1049,7 @@ class Model_Info(object):
         Parameters
         ----------
         mbh_log10 : array
-            black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
+            Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
         knee : float
             The turnover point of the Schechter function
         norm : float
@@ -1159,12 +1061,12 @@ class Model_Info(object):
         hilam : float
             Upper limit of allowable Eddington ratios
         mth : module, optional
-            module to use for mathematical functions, default is numpy.
+            Module to use for mathematical functions, default is numpy.
 
         Returns
         -------
-        lf : array
-            the luminosity function calculated from the black hole mass function and Eddington ratio distribution function
+        lum_func : array
+            The luminosity function calculated from the black hole mass function and Eddington ratio distribution function
         """
 
         if mth is None:
@@ -1175,15 +1077,15 @@ class Model_Info(object):
 
         fduty = self.fdfunc(mbh_log10, redshift)
         
-        loglam_M = self.loglam_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth)
+        loglam_M = self.loglam_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth) # Schechter in mbh_log10
 
         mean_L_at_M = mbh_log10[None, :] + logC + loglam_M
         inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
-        K = inv_sqrt2pi/sigma_loglam * mth.exp(-0.5*((logL_grid[:, None] - mean_L_at_M)/sigma_loglam)**2)
+        K = inv_sqrt2pi/sigma_loglam * mth.exp(-0.5*((logL_grid[:, None] - mean_L_at_M)/sigma_loglam)**2) # ERDF is gaussian in logL at fixed mbh_log10, so this is the probability of logL given mbh_log10
 
         dlogM = mbh_log10[1] - mbh_log10[0]
 
         ndens = self.bhmf(mbh_log10, redz=redshift)
 
-        lf = mth.dot(K,ndens * fduty) * dlogM
-        return lf
+        lum_func = mth.dot(K, ndens * fduty) * dlogM
+        return lum_func
