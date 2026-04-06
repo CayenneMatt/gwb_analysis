@@ -309,17 +309,11 @@ This class automatically reads the data and assigns attributes for the GWB ampli
 </dd>
 <dt><strong>fiducial_values:  dict</strong></dt><dd><p>Dictionary of fiducial values for each parameter in the model</p>
 </dd>
-<dt><strong>posteriors</strong><span class="classifier">dict</span></dt><dd><p>Dictionary of median posterior values for each parameter in the model,
-will be the same as defaults until get_posteriors() is called</p>
+<dt><strong>params</strong><span class="classifier">dict</span></dt><dd><p>Dictionary of median posterior values for each parameter in the model,
+will be the same as fiducial unless get_posteriors() is called</p>
 </dd>
-<dt><strong>.. warning::</strong></dt><dd><p>These are only calculated if get_posteriors() is called</p>
-</dd>
-<dt><strong>posteriors_err</strong><span class="classifier">dict</span></dt><dd><p>Dictionary of standard deviation of posterior values for each parameter in the model,
-will be the same as hardcoded default errors until get_posteriors() is called</p>
-</dd>
-<dt><strong>.. warning::</strong></dt><dd><p>These are only calculated if get_posteriors() is called</p>
-</dd>
-<dt><strong>fiducial_flag</strong><span class="classifier">bool</span></dt><dd><p>Whether the posteriors are currently set to the fiducial values, used for plotting, will be False until get_posteriors() is called</p>
+<dt><strong>params_err</strong><span class="classifier">dict</span></dt><dd><p>Dictionary of standard deviation of posterior values for each parameter in the model,
+will be the same as fiducial values unless get_posteriors() is called</p>
 </dd>
 <dt><strong>plt_labels</strong><span class="classifier">dict</span></dt><dd><p>Dictionary of plot labels associated with each parameter, used for plotting</p>
 </dd>
@@ -888,7 +882,7 @@ and radiative efficiency</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>loglam_M</strong><span class="classifier">array</span></dt><dd><p>Log10 of the Eddington fraction as a function of black hole mass, calculated using</p>
+<dt><strong>loglam_M</strong><span class="classifier">array</span></dt><dd><p>Log10 of the Eddington fraction as a function of black hole mass. Functional form is a Schechter function with the given knee, norm, and slope, and is clipped to be between lowlam and hilam for numerical reasons.</p>
 </dd>
 </dl>
 </dd>
@@ -920,7 +914,7 @@ and radiative efficiency</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>lf</strong><span class="classifier">array</span></dt><dd><p>The luminosity function calculated from the black hole mass function and Eddington ratio distribution function</p>
+<dt><strong>lum_func</strong><span class="classifier">array</span></dt><dd><p>The luminosity function calculated from the black hole mass function and Eddington ratio distribution function</p>
 </dd>
 </dl>
 </dd>
