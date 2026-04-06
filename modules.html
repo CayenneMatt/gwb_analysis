@@ -249,136 +249,143 @@ This class automatically reads the data and assigns attributes for the GWB ampli
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>path</strong><span class="classifier">str</span></dt><dd><p>path to the data, should end with a ‘/’ and be the same as the path used to generate the data</p>
+<dt><strong>path</strong><span class="classifier">str</span></dt><dd><p>Path to the data, should end with a ‘/’ and be the same as the path used to generate the data</p>
 </dd>
-<dt><strong>file</strong><span class="classifier">str</span></dt><dd><p>filename of the data, should be the same as the filename used to generate the data</p>
+<dt><strong>file</strong><span class="classifier">str</span></dt><dd><p>Filename of the data, should be the same as the filename used to generate the data</p>
 </dd>
-<dt><strong>model_name</strong><span class="classifier">str</span></dt><dd><p>name of the model, used for plotting</p>
+<dt><strong>model_name</strong><span class="classifier">str</span></dt><dd><p>Name of the model, used for plotting</p>
 </dd>
-<dt><strong>color</strong><span class="classifier">str</span></dt><dd><p>color for all plotting associated with this model</p>
+<dt><strong>color</strong><span class="classifier">str</span></dt><dd><p>Color for all plotting associated with this model</p>
 </dd>
-<dt><strong>line_style</strong><span class="classifier">str</span></dt><dd><p>line style for all plotting associated with this model</p>
+<dt><strong>line_style</strong><span class="classifier">str</span></dt><dd><p>Line style for all plotting associated with this model</p>
 </dd>
-<dt><strong>threshold</strong><span class="classifier">float, optional</span></dt><dd><p>minimum likelihood cutoff, used for plotting error bars on the spectrum. Default is 0.5</p>
+<dt><strong>threshold</strong><span class="classifier">float, optional</span></dt><dd><p>Minimum likelihood cutoff, used for plotting error bars on the spectrum. Default is 0.5</p>
 </dd>
-<dt><strong>evolving</strong><span class="classifier">bool, optional</span></dt><dd><p>whether the model has MMBulge evolution, used for plotting. Default is False</p>
+<dt><strong>evolving</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether the model has MMBulge evolution, used for plotting. Default is False</p>
 </dd>
-<dt><strong>stdev</strong><span class="classifier">float, optional</span></dt><dd><p>standard deviation of evolution parameter, used for plotting, should be None if evolving is False. Default is None</p>
+<dt><strong>stdev</strong><span class="classifier">float, optional</span></dt><dd><p>Standard deviation of evolution parameter, used for plotting, should be None if evolving is False. Default is None</p>
 </dd>
-<dt><strong>nfreq</strong><span class="classifier">int, optional</span></dt><dd><p>number of frequency bins to use in likelihood calculation, 5 is recommended. Default is 5</p>
+<dt><strong>nfreq</strong><span class="classifier">int, optional</span></dt><dd><p>Number of frequency bins to use in likelihood calculation, 5 is recommended. Default is 5</p>
 </dd>
-<dt><strong>param_space_name</strong><span class="classifier">str, optional</span></dt><dd><p>name of parameter space, should be the same as the parameter space used to generate the data. Default is ‘PS_Astro_Strong_All’</p>
+<dt><strong>param_space_name</strong><span class="classifier">str, optional</span></dt><dd><p>Name of parameter space, should be the same as the parameter space used to generate the data. Default is ‘PS_Astro_Strong_All’</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Attributes<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>path</strong><span class="classifier">str</span></dt><dd><p>path to the data specified as an argument</p>
+<dt><strong>path</strong><span class="classifier">str</span></dt><dd><p>Path to the data specified as an argument</p>
 </dd>
-<dt><strong>file</strong><span class="classifier">str</span></dt><dd><p>filename of the data specified as an argument</p>
+<dt><strong>file</strong><span class="classifier">str</span></dt><dd><p>Filename of the data specified as an argument</p>
 </dd>
-<dt><strong>param_space_name</strong><span class="classifier">str</span></dt><dd><p>name of parameter space specified as an argument</p>
+<dt><strong>param_space_name</strong><span class="classifier">str</span></dt><dd><p>Name of parameter space specified as an argument</p>
 </dd>
 <dt><strong>gwb</strong><span class="classifier">array-like</span></dt><dd><p>GWB amplitudes for each model, shape is (nsamples, nrealizations, nfreqs)</p>
 </dd>
-<dt><strong>param_names</strong><span class="classifier">array-like</span></dt><dd><p>names of parameters in the model</p>
+<dt><strong>param_names</strong><span class="classifier">array-like</span></dt><dd><p>Names of parameters in the model</p>
 </dd>
-<dt><strong>params</strong><span class="classifier">array-like</span></dt><dd><p>parameter sample associated with each model</p>
+<dt><strong>params</strong><span class="classifier">array-like</span></dt><dd><p>Parameter sample associated with each model</p>
 </dd>
-<dt><strong>ln_like</strong><span class="classifier">array-like</span></dt><dd><p>log-likelihood of each model</p>
+<dt><strong>ln_like</strong><span class="classifier">array-like</span></dt><dd><p>Log-likelihood of each model</p>
 </dd>
-<dt><strong>freqs</strong><span class="classifier">array-like</span></dt><dd><p>frequencies at which the amplitudes are calculated</p>
+<dt><strong>freqs</strong><span class="classifier">array-like</span></dt><dd><p>Frequencies at which the amplitudes are calculated</p>
 </dd>
-<dt><strong>model_name</strong><span class="classifier">str</span></dt><dd><p>model name specified as an argument</p>
+<dt><strong>model_name</strong><span class="classifier">str</span></dt><dd><p>Model name specified as an argument</p>
 </dd>
-<dt><strong>color</strong><span class="classifier">str</span></dt><dd><p>color for all plotting associated with this model specified as an argument</p>
+<dt><strong>color</strong><span class="classifier">str</span></dt><dd><p>Color for all plotting associated with this model specified as an argument</p>
 </dd>
-<dt><strong>line_style</strong><span class="classifier">str</span></dt><dd><p>line style for all plotting associated with this model specified as an argument</p>
+<dt><strong>line_style</strong><span class="classifier">str</span></dt><dd><p>Line style for all plotting associated with this model specified as an argument</p>
 </dd>
 <dt><strong>threshold</strong><span class="classifier">float</span></dt><dd><p>minimum likelihood cutoff specified as an argument</p>
 </dd>
-<dt><strong>evolving</strong><span class="classifier">bool</span></dt><dd><p>whether the model has MMBulge evolution specified as an argument</p>
+<dt><strong>evolving</strong><span class="classifier">bool</span></dt><dd><p>Whether the model has MMBulge evolution specified as an argument</p>
 </dd>
-<dt><strong>stdev</strong><span class="classifier">float</span></dt><dd><p>standard deviation of evolution parameter specified as an argument</p>
+<dt><strong>stdev</strong><span class="classifier">float</span></dt><dd><p>Standard deviation of evolution parameter specified as an argument</p>
 </dd>
-<dt><strong>nfreq</strong><span class="classifier">int</span></dt><dd><p>number of frequency bins to use in likelihood calculation specified as an argument</p>
+<dt><strong>nfreq</strong><span class="classifier">int</span></dt><dd><p>Number of frequency bins to use in likelihood calculation specified as an argument</p>
 </dd>
-<dt><strong>idcs</strong><span class="classifier">array-like</span></dt><dd><p>index of evolution parameter, None if evolving is False</p>
+<dt><strong>idcs</strong><span class="classifier">array-like</span></dt><dd><p>Index of evolution parameter, None if evolving is False</p>
 </dd>
-<dt><strong>space_class</strong><span class="classifier">class</span></dt><dd><p>class of the parameter space, used to get priors and fiducial values</p>
+<dt><strong>space_class</strong><span class="classifier">class</span></dt><dd><p>Class of the parameter space, used to get priors and fiducial values</p>
 </dd>
-<dt><strong>fiducial_values:  dict</strong></dt><dd><p>dictionary of fiducial values for each parameter in the model</p>
+<dt><strong>fiducial_values:  dict</strong></dt><dd><p>Dictionary of fiducial values for each parameter in the model</p>
 </dd>
-<dt><strong>posteriors</strong><span class="classifier">dict</span></dt><dd><p>dictionary of median posterior values for each parameter in the model,  (!!!) calculated by get_posteriors(),
-will be the same as defaults until get_posteriors() is called</p>
+<dt><strong>params</strong><span class="classifier">dict</span></dt><dd><p>Dictionary of median posterior values for each parameter in the model,
+will be the same as fiducial unless get_posteriors() is called</p>
 </dd>
-<dt><strong>posteriors_err</strong><span class="classifier">dict</span></dt><dd><p>dictionary of standard deviation of posterior values for each parameter in the model,  (!!!) calculated by get_posteriors(),
-will be the same as hardcoded default errors until get_posteriors() is called</p>
+<dt><strong>params_err</strong><span class="classifier">dict</span></dt><dd><p>Dictionary of standard deviation of posterior values for each parameter in the model,
+will be the same as fiducial values unless get_posteriors() is called</p>
 </dd>
-<dt><strong>fiducial_flag</strong><span class="classifier">bool</span></dt><dd><p>whether the posteriors are currently set to the fiducial values, used for plotting, will be False until get_posteriors() is called</p>
-</dd>
-<dt><strong>plt_labels</strong><span class="classifier">dict</span></dt><dd><p>dictionary of plot labels associated with each parameter, used for plotting</p>
+<dt><strong>plt_labels</strong><span class="classifier">dict</span></dt><dd><p>Dictionary of plot labels associated with each parameter, used for plotting</p>
 </dd>
 </dl>
 </dd>
 </dl>
 <p class="rubric">Methods</p>
-<div class="table-wrapper docutils container">
-<table class="docutils align-default">
+<div class="table-wrapper autosummary longtable docutils container">
+<table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><strong>get_priors()</strong></p></td>
-<td><p>returns parameter names and default values from the prior parameter space.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_lambda" title="gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_lambda"><code class="xref py py-obj docutils literal notranslate"><span class="pre">L_from_Mbh_via_lambda</span></code></a>(mbh_log10, knee, norm, ...)</p></td>
+<td><p>Calculate AGN luminosity function by convolving black hole mass function with an Eddington ratio distribution function</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>get_posteriors()</strong></p></td>
-<td><p>get the median of the posterior distributions for each parameter in the model and store them in the posteriors attribute.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_mdot_eta_func" title="gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_mdot_eta_func"><code class="xref py py-obj docutils literal notranslate"><span class="pre">L_from_Mbh_via_mdot_eta_func</span></code></a>(mbh_log10, ...)</p></td>
+<td><p>Calculate luminosity from black hole mass using the accretion rate and radiative efficiency.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>corner_plot()</strong></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.add_spectrum" title="gwb_analysis.analyze_model.Model_Info.add_spectrum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_spectrum</span></code></a>(ax[, lw, errorbars, label])</p></td>
+<td><p>Add the spectrum of the model to a given axis, with optional error bars and label.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhargal" title="gwb_analysis.analyze_model.Model_Info.bhargal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhargal</span></code></a>(mbh_log10, redshift[, mth])</p></td>
+<td><p>Calculate black hole accretion rate as a function of black hole mass and redshift using the MMBulge relation and the GSMF.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf" title="gwb_analysis.analyze_model.Model_Info.bhmf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhmf</span></code></a>(mbh_log10, redz)</p></td>
+<td><p>Produce the black hole mass function at a given redshift.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf_err" title="gwb_analysis.analyze_model.Model_Info.bhmf_err"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhmf_err</span></code></a>(mbh_log10, redz[, ndraws])</p></td>
+<td><p>Produces the black hole mass function at a given redshift.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf_from_gsmf" title="gwb_analysis.analyze_model.Model_Info.bhmf_from_gsmf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhmf_from_gsmf</span></code></a>(mstar_log10, mbh_log10, redshift)</p></td>
+<td><p>Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.calculate_radiative_efficiency" title="gwb_analysis.analyze_model.Model_Info.calculate_radiative_efficiency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_radiative_efficiency</span></code></a>(zval, mbh_log10)</p></td>
+<td><p>Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the luminosity function at the average redshift.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.corner_plot" title="gwb_analysis.analyze_model.Model_Info.corner_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corner_plot</span></code></a>([nbins, cmap])</p></td>
 <td><p>Old and slow, but tested version of corner plot, will be removed in favor of corner_plot_fast() pending appropriate testing.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>corner_plot_fast()</strong></p></td>
-<td><p>faster version of corner plot, should produce the same plot as corner_plot() but much faster, recommended over corner_plot() pending appropriate testing.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.corner_plot_fast" title="gwb_analysis.analyze_model.Model_Info.corner_plot_fast"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corner_plot_fast</span></code></a>([nbins, cmap])</p></td>
+<td><p>Faster version of corner plot.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>add_spectrum()</strong></p></td>
-<td><p>add the spectrum of the model to a given axis, with optional error bars and label.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_davis" title="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_davis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eta_from_mbh_davis</span></code></a>(mbh_log10)</p></td>
+<td><p>Calulate radiative efficiency as a function of black hole mass using the fit from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2011ApJ...728...98D/abstract">Davis &amp; Laor (2011)</a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>bhmf()</strong></p></td>
-<td><p>produce the black hole mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation, using either the posterior values or the fiducial values for the parameters in the model.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_line" title="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eta_from_mbh_line</span></code></a>(mbh_log10[, mth])</p></td>
+<td><p>Calculate radiative efficiency as a function of black hole mass using the a line fit to the data from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract">Li et al. (2012)</a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>bhmf_err()</strong></p></td>
-<td><p>produce the error on the black hole mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation, using either the posterior values or the fiducial values for the parameters in the model, and using the standard deviation of the posterior values as the error on each parameter to calculate the error on the BHMF.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic" title="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eta_from_mbh_logistic</span></code></a>(mbh_log10[, min, k, ...])</p></td>
+<td><p>Calulate radiative efficiency as a function of black hole mass a logistic fit to the data from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract">Li et al. (2012)</a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>gsmf()</strong></p></td>
-<td><p>produce the galaxy stellar mass function at a given redshift, calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation, using either the posterior values or the fiducial values for the parameters in the model.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.fdfunc" title="gwb_analysis.analyze_model.Model_Info.fdfunc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fdfunc</span></code></a>(mbh_log10, redshift[, fdmin])</p></td>
+<td><p>Fit to agn fraction as a function of stellar mass from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics">Zou et al. (2024)</a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>get_shenf()</strong></p></td>
-<td><p>retrieve the <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a> QLF fit at a given redshift.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_posteriors" title="gwb_analysis.analyze_model.Model_Info.get_posteriors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_posteriors</span></code></a>()</p></td>
+<td><p>Get the median posterior values for each parameter in the model</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>get_shend()</strong></p></td>
-<td><p>retrieve the <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a> QLF data at a given redshift.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_priors" title="gwb_analysis.analyze_model.Model_Info.get_priors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_priors</span></code></a>()</p></td>
+<td><p>Returns parameter names and sampled distributions from the prior parameter space</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>fdfunc()</strong></p></td>
-<td><p>calculate the AGN fraction as a function of black hole mass and redshift, fit to data in Zou et al. (2024)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_shend" title="gwb_analysis.analyze_model.Model_Info.get_shend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_shend</span></code></a>(redshift[, path_to_shen_data])</p></td>
+<td><p>Retrieve the data from the <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a>  bolometric luminosity function at a given redshift.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>bhmf_from_gsmf()</strong></p></td>
-<td><p>calculate the black hole mass function from the galaxy stellar mass function using the MMBulge relation</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_shenf" title="gwb_analysis.analyze_model.Model_Info.get_shenf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_shenf</span></code></a>(redshift[, path_to_shen_fits])</p></td>
+<td><p>Retrieve the fit to the <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a> bolometric luminosity function at a given redshift.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>calculate_radiative_efficiency()</strong></p></td>
-<td><p>calculate the radiative efficiency as a function of black hole mass at a given redshift.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.gsmf" title="gwb_analysis.analyze_model.Model_Info.gsmf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gsmf</span></code></a>(mstar_log10, redz)</p></td>
+<td><p>Produces the galaxy stellar mass function at a given redshift.</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>bhargal()</strong></p></td>
-<td><p>calculate black hole accretion rate as a function of black hole mass and redshift.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.loglam_func" title="gwb_analysis.analyze_model.Model_Info.loglam_func"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loglam_func</span></code></a>(mbh_log10, knee, norm, slope[, ...])</p></td>
+<td><p>Calculate Eddington fraction as a function of mass.</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>eta_from_mbh_davis()</strong></p></td>
-<td><p>calculate radiative efficiency using the relation from Davis &amp; Laor (2011) as a function of black hole mass.</p></td>
-</tr>
-<tr class="row-even"><td><p><strong>eta_from_mbh_line()</strong></p></td>
-<td><p>calculate radiative efficiency as a funciton of black hole mass using a linear fit to Li et al. (2012) data.</p></td>
-</tr>
-<tr class="row-odd"><td><p><strong>eta_from_mbh_logistic()</strong></p></td>
-<td><p>calculate radiative efficiency as a function of black hole mass using a logistic fit to Li et al. (2012) data.</p></td>
-</tr>
-<tr class="row-even"><td><p><strong>L_from_Mbh_via_mdot_eta_func()</strong></p></td>
-<td><p>calculate AGN luminosity from black hole mass and accretion rate, using a specified function for the radiative efficiency.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.plot_histogram" title="gwb_analysis.analyze_model.Model_Info.plot_histogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_histogram</span></code></a>(ax, param_name[, nbins, ...])</p></td>
+<td><p>Plot a histogram of the posterior distribution for a given parameter, with optional prior distribution overlaid.</p></td>
 </tr>
 </tbody>
 </table>
@@ -386,7 +393,7 @@ will be the same as hardcoded default errors until get_posteriors() is called</p
 <dl class="py method">
 <dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.get_priors">
 <span class="sig-name descname"><span class="pre">get_priors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.get_priors" title="Link to this definition">¶</a></dt>
-<dd><p>returns parameter names and sampled distributions from the prior parameter space</p>
+<dd><p>Returns parameter names and sampled distributions from the prior parameter space</p>
 <p>Sampled distribution of parameter i: space.param_samples.transpose()[i]
 Name of parameter i: space.param_names[i]</p>
 </dd></dl>
@@ -431,9 +438,9 @@ Name of parameter i: space.param_names[i]</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>nbins</strong><span class="classifier">int, optional</span></dt><dd><p>number of bins to use in the histograms and contour plots. Default is 20</p>
+<dt><strong>nbins</strong><span class="classifier">int, optional</span></dt><dd><p>Number of bins to use in the histograms and contour plots. Default is 20</p>
 </dd>
-<dt><strong>cmap</strong><span class="classifier">str, optional</span></dt><dd><p>name of matplotlib colormap to use for the points in the corner plot. Default is ‘Blues’</p>
+<dt><strong>cmap</strong><span class="classifier">str, optional</span></dt><dd><p>Name of matplotlib colormap to use for the points in the corner plot. Default is ‘Blues’</p>
 </dd>
 </dl>
 </dd>
@@ -452,9 +459,9 @@ Name of parameter i: space.param_names[i]</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>nbins</strong><span class="classifier">int, optional</span></dt><dd><p>number of bins to use in the histograms and contour plots. Default is 20</p>
+<dt><strong>nbins</strong><span class="classifier">int, optional</span></dt><dd><p>Number of bins to use in the histograms and contour plots. Default is 20</p>
 </dd>
-<dt><strong>cmap</strong><span class="classifier">str, optional</span></dt><dd><p>name of matplotlib colormap to use for the points in the corner plot. Default is ‘Blues’</p>
+<dt><strong>cmap</strong><span class="classifier">str, optional</span></dt><dd><p>Name of matplotlib colormap to use for the points in the corner plot. Default is ‘Blues’</p>
 </dd>
 </dl>
 </dd>
@@ -473,13 +480,13 @@ Name of parameter i: space.param_names[i]</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>ax</strong><span class="classifier">matplotlib axis</span></dt><dd><p>axis to which the spectrum will be added</p>
+<dt><strong>ax</strong><span class="classifier">Matplotlib axis</span></dt><dd><p>axis to which the spectrum will be added</p>
 </dd>
-<dt><strong>lw</strong><span class="classifier">float, optional</span></dt><dd><p>line width of the spectrum, default is 3</p>
+<dt><strong>lw</strong><span class="classifier">float, optional</span></dt><dd><p>Line width of the spectrum, default is 3</p>
 </dd>
-<dt><strong>errorbars</strong><span class="classifier">bool, optional</span></dt><dd><p>whether to add error bars to the spectrum, default is False</p>
+<dt><strong>errorbars</strong><span class="classifier">bool, optional</span></dt><dd><p>Whether to add error bars to the spectrum, default is False</p>
 </dd>
-<dt><strong>label</strong><span class="classifier">str, optional</span></dt><dd><p>label for the spectrum, default is None, in which case the model name will be used</p>
+<dt><strong>label</strong><span class="classifier">str, optional</span></dt><dd><p>Label for the spectrum, default is None, in which case the model name will be used</p>
 </dd>
 </dl>
 </dd>
@@ -494,32 +501,20 @@ Name of parameter i: space.param_names[i]</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.bhmf">
 <span class="sig-name descname"><span class="pre">bhmf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redz</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.bhmf" title="Link to this definition">¶</a></dt>
-<dd><blockquote>
-<div><p>Produce the black hole mass function at a given redshift.</p>
-<p>This is calculated using holodeck by convolving a double Schechter
-GSMF with an Mbh–M_bulge relation.</p>
-<div class="math-wrapper docutils container">
-<div class="math notranslate nohighlight">
-\[`M_\mathrm{BH}=lpha_0 \left(\]</div>
-</div>
-</div></blockquote>
-<p>rac{M_{mathrm {bulge}}}{10^{11} M_{odot}}
-ight)^{eta_0}`</p>
+<dd><p>Produce the black hole mass function at a given redshift. This is calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation
+<span class="math notranslate nohighlight">\(M_\mathrm{BH} = \alpha_0 \left(\frac{M_{\mathrm{bulge}}}{10^{11}\, M_{\odot}}\right)^{\beta_0}\)</span></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mass</strong><span class="classifier">tuple</span></dt><dd><p>(min, max, npoints) in log10(Mbh/Msol), used as arguments
-to np.linspace().</p>
+<dt><strong>mass</strong><span class="classifier">array</span></dt><dd><p>Black hole masses at which the BHMF is evaluated, in log10(Mbh/Msol)</p>
 </dd>
-<dt><strong>redz</strong><span class="classifier">float</span></dt><dd><p>Redshift.</p>
+<dt><strong>redz</strong><span class="classifier">float</span></dt><dd><p>Redshift at which the BHMF is evaluated</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>masses</strong><span class="classifier">tuple</span></dt><dd><p>Masses at which the BHMF is evaluated, in log10(Mbh/Msol).</p>
-</dd>
-<dt><strong>bhmf</strong><span class="classifier">array-like</span></dt><dd><p>Black hole mass function at the given redshift.</p>
+<dt><strong>bhmf</strong><span class="classifier">array-like</span></dt><dd><p>Black hole mass function at the given redshift</p>
 </dd>
 </dl>
 </dd>
@@ -530,31 +525,24 @@ to np.linspace().</p>
 <dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.bhmf_err">
 <span class="sig-name descname"><span class="pre">bhmf_err</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ndraws</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.bhmf_err" title="Link to this definition">¶</a></dt>
 <dd><p>Produces the black hole mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation</p>
-<dl class="field-list">
+<dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mass</strong><span class="classifier">array</span></dt><dd><p>black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)</p>
+<dt><strong>mass</strong><span class="classifier">array</span></dt><dd><p>Black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)</p>
 </dd>
-<dt><strong>redz</strong><span class="classifier">float</span></dt><dd><p>redshift</p>
+<dt><strong>redz</strong><span class="classifier">float</span></dt><dd><p>Redshift at which the BHMF is evaluated</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>bhmf_median</strong><span class="classifier">array</span></dt><dd><p>the median black hole mass function at the given redshift, calculated using the median posterior values for the parameters in the model</p>
+<dt><strong>bhmf_median</strong><span class="classifier">array</span></dt><dd><p>The median black hole mass function at the given redshift, calculated using the median posterior values for the parameters in the model</p>
 </dd>
-<dt><strong>bhmf_upper_bound</strong><span class="classifier">array</span></dt><dd><p>the 84th percentile of the black hole mass function at the given redshift</p>
+<dt><strong>bhmf_upper_bound</strong><span class="classifier">array</span></dt><dd><p>The 84th percentile of the black hole mass function at the given redshift</p>
 </dd>
-<dt><strong>bhmf_lower_bound</strong><span class="classifier">array</span></dt><dd><p>the 16th percentile of the black hole mass function at the given redshift</p>
+<dt><strong>bhmf_lower_bound</strong><span class="classifier">array</span></dt><dd><p>The 16th percentile of the black hole mass function at the given redshift</p>
 </dd>
-<dt>TODO:</dt><dd></dd>
 </dl>
-<ul class="simple">
-<li><dl class="simple">
-<dt>Add fiducial functionality</dt><dd></dd>
-</dl>
-</li>
-</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -566,13 +554,16 @@ to np.linspace().</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mass</strong><span class="classifier">tuple (min, max, npoints) in log10(Msun/Msol) to be used as arguments in np.linspace()</span></dt><dd></dd>
-<dt><strong>redz</strong><span class="classifier">redshift</span></dt><dd></dd>
+<dt><strong>mass</strong><span class="classifier">array</span></dt><dd><p>Black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)</p>
+</dd>
+<dt><strong>redz</strong><span class="classifier">float</span></dt><dd><p>Redshift at which the BHMF is evaluated</p>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt>The galaxy stellar mass function at the given redshift</dt><dd></dd>
+<dt><strong>gsmf</strong><span class="classifier">array</span></dt><dd><p>The galaxy stellar mass function at the given redshift</p>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -585,17 +576,17 @@ to np.linspace().</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>redshift</strong><span class="classifier">flaot</span></dt><dd><p>redshift of the fit to be used 0.2-7.0 in steps of 0.2</p>
+<dt><strong>redshift</strong><span class="classifier">flaot</span></dt><dd><p>Redshift of the fit to be used 0.2-7.0 in steps of 0.2</p>
 </dd>
-<dt><strong>path_to_shen_fits</strong><span class="classifier">str, optional</span></dt><dd><p>path to the fits. Default is “/Users/cayenne/Documents/Research/quasarlf/qlffits/”</p>
+<dt><strong>path_to_shen_fits</strong><span class="classifier">str, optional</span></dt><dd><p>Path to the fits. Default is “/Users/cayenne/Documents/Research/quasarlf/qlffits/”</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>x</strong><span class="classifier">array</span></dt><dd><p>the x-axis values, luminosity in log10(L/erg/s)</p>
+<dt><strong>x</strong><span class="classifier">array</span></dt><dd><p>The x-axis values, luminosity in log10(L/erg/s)</p>
 </dd>
-<dt><strong>y</strong><span class="classifier">array</span></dt><dd><p>fit to log phiL</p>
+<dt><strong>y</strong><span class="classifier">array</span></dt><dd><p>Fit to log phiL</p>
 </dd>
 </dl>
 </dd>
@@ -609,17 +600,17 @@ to np.linspace().</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>redshift</strong><span class="classifier">flaot</span></dt><dd><p>redshift of the fit to be used 0.2-7.0 in steps of 0.2</p>
+<dt><strong>redshift</strong><span class="classifier">flaot</span></dt><dd><p>Redshift of the fit to be used 0.2-7.0 in steps of 0.2</p>
 </dd>
-<dt><strong>path_to_shen_fits</strong><span class="classifier">str, optional</span></dt><dd><p>path to the data. Default is “/Users/cayenne/Documents/Research/quasarlf/qlfdata/”</p>
+<dt><strong>path_to_shen_fits</strong><span class="classifier">str, optional</span></dt><dd><p>Path to the data. Default is “/Users/cayenne/Documents/Research/quasarlf/qlfdata/”</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>x</strong><span class="classifier">array</span></dt><dd><p>the x-axis values, luminosity in log10(L/erg/s)</p>
+<dt><strong>x</strong><span class="classifier">array</span></dt><dd><p>The x-axis values, luminosity in log10(L/erg/s)</p>
 </dd>
-<dt><strong>y</strong><span class="classifier">array</span></dt><dd><p>data for log phiL</p>
+<dt><strong>y</strong><span class="classifier">array</span></dt><dd><p>Data for log phiL</p>
 </dd>
 </dl>
 </dd>
@@ -636,23 +627,23 @@ and does not consider mergers or other processes that may contribute to the grow
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>zval</strong><span class="classifier">float</span></dt><dd><p>the redshift at which to calculate the radiative efficiency</p>
+<dt><strong>zval</strong><span class="classifier">float</span></dt><dd><p>The redshift at which to calculate the radiative efficiency</p>
 </dd>
-<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>the log10 of the black hole masses at which to evaluate the BHMF.</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>The log10 of the black hole masses at which to evaluate the BHMF.</p>
 </dd>
-<dt><strong>step</strong><span class="classifier">float, optional</span></dt><dd><p>the step in redshift to use for calculating the change in the BHMF and LF. Default is 1e-3</p>
+<dt><strong>step</strong><span class="classifier">float, optional</span></dt><dd><p>The step in redshift to use for calculating the change in the BHMF and LF. Default is 1e-3</p>
 </dd>
-<dt><strong>path_to_shen_fits: str, optional</strong></dt><dd><p>path to the <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a> fits for the bolometric LF at different redshifts. Default is “/Users/cayenne/Documents/Research/quasarlf/qlffits/”</p>
+<dt><strong>path_to_shen_fits: str, optional</strong></dt><dd><p>Path to the <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a> fits for the bolometric LF at different redshifts. Default is “/Users/cayenne/Documents/Research/quasarlf/qlffits/”</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>erad</strong><span class="classifier">float</span></dt><dd><p>radiative efficiency between the two redshifts</p>
+<dt><strong>erad</strong><span class="classifier">float</span></dt><dd><p>Radiative efficiency between the two redshifts</p>
 </dd>
-<dt><strong>mdot</strong><span class="classifier">float</span></dt><dd><p>the total integrated mass density gain between those redshifts (scaled)</p>
+<dt><strong>mdot</strong><span class="classifier">float</span></dt><dd><p>The total integrated mass density gain between those redshifts (scaled)</p>
 </dd>
-<dt><strong>Lum</strong><span class="classifier">float</span></dt><dd><p>the total integrated luminosity at the latter redshift</p>
+<dt><strong>Lum</strong><span class="classifier">float</span></dt><dd><p>The total integrated luminosity at the latter redshift</p>
 </dd>
 </dl>
 <div class="admonition warning">
@@ -672,19 +663,21 @@ and does not consider mergers or other processes that may contribute to the grow
 <dl class="py method">
 <dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.fdfunc">
 <span class="sig-name descname"><span class="pre">fdfunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fdmin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.fdfunc" title="Link to this definition">¶</a></dt>
-<dd><p>Fit to agn fraction as a function of stellar mass from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics">Zou et al. (2024)</a>
+<dd><p>Fit to agn fraction as a function of stellar mass from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics">Zou et al. (2024)</a>.
 Here stellar mass is inferred from black hole mass</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>log10 of black hole mass in solar masses</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses</p>
 </dd>
-<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>redshift at which to evaluate the AGN fraction</p>
+<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>Redshift at which to evaluate the AGN fraction</p>
 </dd>
-<dt><strong>fdmin</strong><span class="classifier">float, optional</span></dt><dd><p>minimum AGN fraction to return, default is 0.03, which is the value used in <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a></p>
+<dt><strong>fdmin</strong><span class="classifier">float, optional</span></dt><dd><p>Minimum AGN fraction to return, default is 0.03, which is the value used in <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a></p>
 </dd>
-<dt><strong>Returns</strong></dt><dd></dd>
-<dt><strong>——-</strong></dt><dd></dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
 <dt><strong>phi_fd</strong><span class="classifier">array-like</span></dt><dd><p>AGN fraction as a function of black hole mass at the given redshift</p>
 </dd>
 </dl>
@@ -699,15 +692,17 @@ Here stellar mass is inferred from black hole mass</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mstar_log10</strong><span class="classifier">array-like</span></dt><dd><p>log10 of stellar mass in solar masses at which to evaluate the BHMF</p>
+<dt><strong>mstar_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of stellar mass in solar masses at which to evaluate the BHMF</p>
 </dd>
-<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>log10 of black hole mass in solar masses at which to evaluate the BHMF</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses at which to evaluate the BHMF</p>
 </dd>
-<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>redshift at which to evaluate the BHMF</p>
+<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>Redshift at which to evaluate the BHMF</p>
 </dd>
-<dt><strong>Returns</strong></dt><dd></dd>
-<dt><strong>——-</strong></dt><dd></dd>
-<dt><strong>bhmf_conv</strong><span class="classifier">array-like</span></dt><dd><p>the black hole mass function at the given redshift calculated from the GSMF and MMBulge relation</p>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>bhmf_conv</strong><span class="classifier">array-like</span></dt><dd><p>The black hole mass function at the given redshift calculated from the GSMF and MMBulge relation</p>
 </dd>
 </dl>
 </dd>
@@ -719,23 +714,23 @@ Here stellar mass is inferred from black hole mass</p>
 <span class="sig-name descname"><span class="pre">bhargal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.bhargal" title="Link to this definition">¶</a></dt>
 <dd><p>Calculate black hole accretion rate as a function of black hole mass and redshift using the MMBulge relation and the GSMF.</p>
 <p>The function in the paper is in terms of stellar mass, but we can use the MMBulge relation to convert it to a function of black hole mass.
-Fit from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics">https://ui.adsabs.harvard.edu/abs/2024ApJ…964..183Z/graphics</a>
-Msun / year
+Fit from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics">Zou et al. (2024)</a>.</p>
+<p>Msun / year
 Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>log10 of black hole mass in solar masses at which to evaluate the BHARGAL</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses at which to evaluate the BHARGAL</p>
 </dd>
-<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>redshift at which to evaluate the BHARGAL</p>
+<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>Redshift at which to evaluate the BHARGAL</p>
 </dd>
-<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>module to use for mathematical functions, default is numpy.</p>
+<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>bhargal</strong><span class="classifier">array-like</span></dt><dd><p>black hole accretion rate in Msun / year as a function of black hole mass and redshift</p>
+<dt><strong>bhargal</strong><span class="classifier">array-like</span></dt><dd><p>Black hole accretion rate in Msun / year as a function of black hole mass and redshift</p>
 </dd>
 </dl>
 </dd>
@@ -749,15 +744,15 @@ Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>log10 of black hole mass in solar masses</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses</p>
 </dd>
-<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>module to use for mathematical functions, default is numpy.</p>
+<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>etas</strong><span class="classifier">array-like</span></dt><dd><p>radiative efficiency as a function of black hole mass</p>
+<dt><strong>etas</strong><span class="classifier">array-like</span></dt><dd><p>Radiative efficiency as a function of black hole mass</p>
 </dd>
 </dl>
 </dd>
@@ -776,15 +771,15 @@ Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>log10 of black hole mass in solar masses at which to evaluate the radiative efficiency</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses at which to evaluate the radiative efficiency</p>
 </dd>
-<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>module to use for mathematical functions, default is numpy.</p>
+<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>etas</strong><span class="classifier">array-like</span></dt><dd><p>radiative efficiency as a function of black hole mass</p>
+<dt><strong>etas</strong><span class="classifier">array-like</span></dt><dd><p>Radiative efficiency as a function of black hole mass</p>
 </dd>
 </dl>
 </dd>
@@ -802,21 +797,21 @@ Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>log10 of black hole mass in solar masses at which to evaluate the radiative efficiency</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses at which to evaluate the radiative efficiency</p>
 </dd>
-<dt><strong>min</strong><span class="classifier">float, optional</span></dt><dd><p>minimum value of the logistic function, default is 0.25. Default is 0.25</p>
+<dt><strong>min</strong><span class="classifier">float, optional</span></dt><dd><p>Minimum value of the logistic function, default is 0.25. Default is 0.25</p>
 </dd>
-<dt><strong>k</strong><span class="classifier">float, optional</span></dt><dd><p>steepness of the logistic function. Default is -1.4</p>
+<dt><strong>k</strong><span class="classifier">float, optional</span></dt><dd><p>Stepth of the logistic function. Default is -1.4</p>
 </dd>
-<dt><strong>m0</strong><span class="classifier">float, optional</span></dt><dd><p>the value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 8.4</p>
+<dt><strong>m0</strong><span class="classifier">float, optional</span></dt><dd><p>The value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 8.4</p>
 </dd>
-<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>module to use for mathematical functions, default is numpy.</p>
+<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>etas</strong><span class="classifier">array-like</span></dt><dd><p>radiative efficiency as a function of black hole mass</p>
+<dt><strong>etas</strong><span class="classifier">array-like</span></dt><dd><p>Radiative efficiency as a function of black hole mass</p>
 </dd>
 </dl>
 </dd>
@@ -831,24 +826,24 @@ The accretion rate is calculated using the MMBulge relation and the GSMF, and th
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mbh_log10</strong><span class="classifier">array</span></dt><dd><p>black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array</span></dt><dd><p>Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)</p>
 </dd>
-<dt><strong>lums_log10</strong><span class="classifier">array</span></dt><dd><p>array of log10 luminosities at which to evaluate the luminosity function</p>
+<dt><strong>lums_log10</strong><span class="classifier">array</span></dt><dd><p>Array of log10 luminosities at which to evaluate the luminosity function</p>
 </dd>
-<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>redshift at which to evaluate the luminosity function</p>
+<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>Redshift at which to evaluate the luminosity function</p>
 </dd>
-<dt><strong>eta_func</strong><span class="classifier">bool, optional</span></dt><dd><p>which functional form to use for calculating radiative efficiency,
+<dt><strong>eta_func</strong><span class="classifier">bool, optional</span></dt><dd><p>Which functional form to use for calculating radiative efficiency,
 options are ‘Davis’, ‘Logistic’, ‘Line’, and ‘Constant’. Default is ‘Davis’</p>
 </dd>
-<dt><strong>rad_eff</strong><span class="classifier">float, optional</span></dt><dd><p>the constantvalue of the radiative efficiency to use when eta_func is ‘Constant’. Default is None</p>
+<dt><strong>rad_eff</strong><span class="classifier">float, optional</span></dt><dd><p>The constantvalue of the radiative efficiency to use when eta_func is ‘Constant’. Default is None</p>
 </dd>
-<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>module to use for mathematical functions, default is numpy.</p>
+<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>lf_conv</strong><span class="classifier">array</span></dt><dd><p>the luminosity function calculated from the black hole mass function, accretion rate,
+<dt><strong>lf_conv</strong><span class="classifier">array</span></dt><dd><p>The luminosity function calculated from the black hole mass function, accretion rate,
 and radiative efficiency</p>
 </dd>
 </dl>
@@ -869,7 +864,7 @@ and radiative efficiency</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mbh_log10</strong><span class="classifier">array</span></dt><dd><p>black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array</span></dt><dd><p>Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)</p>
 </dd>
 <dt><strong>knee</strong><span class="classifier">float</span></dt><dd><p>The turnover point of the Schechter function</p>
 </dd>
@@ -881,7 +876,13 @@ and radiative efficiency</p>
 </dd>
 <dt><strong>hilam</strong><span class="classifier">float</span></dt><dd><p>Upper limit of allowable Eddington ratios</p>
 </dd>
-<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>module to use for mathematical functions, default is numpy.</p>
+<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>loglam_M</strong><span class="classifier">array</span></dt><dd><p>Log10 of the Eddington fraction as a function of black hole mass. Functional form is a Schechter function with the given knee, norm, and slope, and is clipped to be between lowlam and hilam for numerical reasons.</p>
 </dd>
 </dl>
 </dd>
@@ -895,7 +896,7 @@ and radiative efficiency</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mbh_log10</strong><span class="classifier">array</span></dt><dd><p>black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array</span></dt><dd><p>Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)</p>
 </dd>
 <dt><strong>knee</strong><span class="classifier">float</span></dt><dd><p>The turnover point of the Schechter function</p>
 </dd>
@@ -907,13 +908,13 @@ and radiative efficiency</p>
 </dd>
 <dt><strong>hilam</strong><span class="classifier">float</span></dt><dd><p>Upper limit of allowable Eddington ratios</p>
 </dd>
-<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>module to use for mathematical functions, default is numpy.</p>
+<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
 </dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>lf</strong><span class="classifier">array</span></dt><dd><p>the luminosity function calculated from the black hole mass function and Eddington ratio distribution function</p>
+<dt><strong>lum_func</strong><span class="classifier">array</span></dt><dd><p>The luminosity function calculated from the black hole mass function and Eddington ratio distribution function</p>
 </dd>
 </dl>
 </dd>
