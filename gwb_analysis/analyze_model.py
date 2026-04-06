@@ -16,10 +16,11 @@ from astropy.cosmology import WMAP9 as cosmo
 from numpy import trapz
 import astropy.units as u
 import astropy.constants as c
+import scipy.integrate as inte
 
 import copy
 
-# import pytensor.tensor as pt
+C_edd = (4 * np.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value # erg/s per Msun
 
 class Model_Info(object):
     """
@@ -69,7 +70,9 @@ class Model_Info(object):
         GWB amplitudes for each model, shape is (nsamples, nrealizations, nfreqs)
     param_names : array-like
         Names of parameters in the model
-    params : array-like
+    params : dictionary
+        Dictionary of median posterior values for each parameter in the model, will be the same as fiducial unless get_posteriors() is called
+    param_samples : array-like
         Parameter sample associated with each model
     ln_like : array-like
         Log-likelihood of each model
@@ -255,7 +258,7 @@ class Model_Info(object):
 
         return self
 
-    def plot_histogram(self, ax, param_name, nbins=20, histtype='bar', label=None, prior=False):
+    def plot_histogram(self, ax, param_name, nbins=20, histtype='bar', label=None, prior=False, **kwargs):
         """
         Plot a histogram of the posterior distribution for a given parameter, with optional prior distribution overlaid.
         
@@ -291,11 +294,11 @@ class Model_Info(object):
         if prior:
             ax.hist(xx, density=True, bins=nbins, color='grey', histtype=histtype, linestyle=self.line_style, label=label, alpha=0.5)
         if not prior:
-            ax.hist(xx, weights=weights_med, density=True, bins=nbins, color=self.color, histtype=histtype, linestyle=self.line_style, label=label, lw=3)
+            ax.hist(xx, weights=weights_med, density=True, bins=nbins, color=self.color, histtype=histtype, linestyle=self.line_style, label=label, **kwargs)
 
         return self
     
-    def corner_plot(self, nbins=20, cmap='Blues'):
+    def corner_plot(self, fontsize=25, nbins=20, cmap='Blues'):
         """
         Old and slow, but tested version of corner plot, will be removed in favor of corner_plot_fast() pending appropriate testing. Creates a corner plot for all parameters in the model.
 
@@ -310,8 +313,6 @@ class Model_Info(object):
         -------
         None, the corner plot is displayed using matplotlib
         """
-        print('Depricated, use corner_plot_fast() instead.')
-
         npars = len(self.param_names)
         nsamp, npars = self.param_samples.shape
 
@@ -347,14 +348,18 @@ class Model_Info(object):
             ee = np.linspace(*extr, nbins)
             edges.append(ee)
             axes[ii, ii].set(xlim=extr)
-            axes[-1, ii].set(xlabel=self.plt_labels[self.param_names[ii]])
+            axes[-1, ii].set_xlabel(self.plt_labels[self.param_names[ii]], fontsize=fontsize)
             if ii > 0:
-                axes[ii, 0].set(ylabel=self.plt_labels[self.param_names[ii]])
+                axes[ii, 0].set_ylabel(self.plt_labels[self.param_names[ii]], fontsize=fontsize)
+            # axes[-1, ii].set(xlabel=self.plt_labels[self.param_names[ii]])
+            # if ii > 0:
+            #     axes[ii, 0].set(ylabel=self.plt_labels[self.param_names[ii]])
             for jj in range(ii):
                 ax = axes[ii, jj]
                 ax.set(ylim=extr)
 
         for (ii, jj), ax in np.ndenumerate(axes):
+            ax.tick_params(axis='both', labelsize=fontsize-5)
             if jj > ii:
                 ax.set_visible(False)
                 continue
@@ -375,6 +380,10 @@ class Model_Info(object):
             yy = self.param_samples[:, ii][sort_idx[valid]]
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
+        for ax in axes[-1, :]:
+            ax.tick_params(axis='x', labelrotation=45)
+
+        fig.subplots_adjust(wspace=0.1, hspace=0.1);
 
 
     def corner_plot_fast(self, nbins=20, cmap='Blues'):
@@ -462,7 +471,7 @@ class Model_Info(object):
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
     
-    def add_spectrum(self, ax, lw=3, errorbars=False, label=None):
+    def add_spectrum(self, ax, errorbars=False, likelihood=False, label=None, **kwargs):
         """
         Add the spectrum of the model to a given axis, with optional error bars and label.
 
@@ -485,11 +494,14 @@ class Model_Info(object):
             label = self.model_name
         vals = np.sum(self.ln_like[:, :self.nfreq], axis=-1)
         sim_idx = np.argmax(vals)
+        
+        if likelihood:
+            print('Maximum likelihood value for model {}: {}'.format(self.model_name, np.exp(vals[sim_idx])))
         gwb = np.median(self.gwb, axis=2)
-        ax.plot(np.log10(self.freqs), gwb[sim_idx], lw=lw, ls=self.line_style, c=self.color, label=label)
+
+        ax.plot(np.log10(self.freqs), gwb[sim_idx], ls=self.line_style, c=self.color, label=label, **kwargs)
         if errorbars:
             valid = np.where((vals >= (np.nanmax(vals)- self.threshold)))[0]
-            # print(len(valid) / len(vals))
             up = np.max(gwb[valid], axis=0)
             dn = np.min(gwb[valid], axis=0)
             ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
@@ -616,7 +628,7 @@ class Model_Info(object):
         
         Parameters
         -----------  
-        redshift : flaot
+        redshift : float
             Redshift of the fit to be used 0.2-7.0 in steps of 0.2
         path_to_shen_fits : str, optional
             Path to the fits. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
@@ -636,8 +648,8 @@ class Model_Info(object):
         Retrieve the data from the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_  bolometric luminosity function at a given redshift.
 
         Parameters
-        -----------  
-        redshift : flaot
+        -----------
+        redshift : float
             Redshift of the fit to be used 0.2-7.0 in steps of 0.2
         path_to_shen_fits : str, optional
             Path to the data. Default is "/Users/cayenne/Documents/Research/quasarlf/qlfdata/"
@@ -722,7 +734,7 @@ class Model_Info(object):
 
         return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
-    def fdfunc(self, mbh_log10, redshift, fdmin=0.0):
+    def fdfunc_zou(self, mbh_log10, redshift, fdmin=0.0):
         """
         Fit to agn fraction as a function of stellar mass from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
         Here stellar mass is inferred from black hole mass
@@ -760,6 +772,49 @@ class Model_Info(object):
 
         return phi_fd
     
+    def fdfunc_quad(self, redshift, fdmin=0.0):
+        a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0806857142857146
+        fduty = a * redshift**2 + b * redshift + c
+
+        try:
+            fduty[fduty < fdmin] = fdmin
+        except TypeError:
+            if fduty < fdmin:
+                fduty = fdmin
+        return fduty
+
+    def fdfunc_shan(self, mbh_log10, N0, alpha, beta, mbh_star):
+        """
+        Equation A1 from `Shankar et al (2013) <https://ui.adsabs.harvard.edu/abs/2013MNRAS.428..421S/abstract>`_
+        for calculating the active fraction of black holes as a function of mass, where the active fraction is defined as the
+        fraction of black holes that are actively accreting at a given time.
+
+        Parameters
+        ----------
+        mbh_log10 : array-like
+            Log10 of black hole mass in solar masses
+        N0 : float
+            Normalization
+        alpha : float
+            The low-mass slope
+        beta : float
+            The high-mass slope
+        mbh_star : float
+            The characteristic black hole mass at which the active fraction transitions from the low-mass slope to
+
+        Returns
+        -------
+        Nactive : array-like
+            The active fraction of black holes as a function of mass at the given redshift
+        """
+
+        denom = (10**mbh_log10 / 10**mbh_star)**alpha + (10**mbh_log10 / 10**mbh_star)**beta
+
+        Nactive = N0 / denom
+
+        return Nactive
+
+
     def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift):
         """
         Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
@@ -961,7 +1016,7 @@ class Model_Info(object):
         return l / (1 + mth.exp(k * (mbh_log10 - m0))) + min
     
 
-    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, ndens=None, scatter=None, eta_func = 'Davis', rad_eff=None, mdot_func='Gal', mth=None):
+    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, ndens=None, scatter=None, eta_func = 'Davis', rad_eff=None, fd_func='Zou', mdot_func='Gal', mth=None):
         """
         Calculate luminosity from black hole mass using the accretion rate and radiative efficiency.
         The accretion rate is calculated using the MMBulge relation and the GSMF, and the radiative efficiency is calculated using one of several functions of black hole mass.
@@ -981,6 +1036,8 @@ class Model_Info(object):
             options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
         rad_eff : float, optional
             The constantvalue of the radiative efficiency to use when eta_func is 'Constant'. Default is None
+        fd_func : bool, optional
+            Which functional form to use for calculating AGN fraction, options are 'Zou' and 'Quad'. Default is 'Zou'.
         mdot_func : bool, optional
             Which functional form to use for calculating accretion rate, options are 'Gal', 'Bondi', and 'Lambda'. Default is 'Gal'.
         mth : module, optional
@@ -1043,7 +1100,11 @@ class Model_Info(object):
         inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
         K = inv_sqrt2pi/scatter * mth.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
 
-        fduty = self.fdfunc(mbh_log10, redshift)
+        if fd_func == 'Zou':
+            fduty = self.fdfunc_zou(mbh_log10, redshift)
+
+        elif fd_func == 'Quad':
+            fduty = self.fdfunc_quad(redshift)
 
         if ndens is None:
             ndens = self.bhmf(mbh_log10, redz=redshift)
@@ -1053,7 +1114,7 @@ class Model_Info(object):
 
         return lf_conv
 
-    def loglam_func(self, mbh_log10, knee, norm, slope, lowlam=-5, hilam=1, mth=None):
+    def loglamM_func(self, mbh_log10, knee, norm, slope, lowlam=-15, hilam=15, mth=None):
         """
         Calculate Eddington fraction as a function of mass. Schechter function
 
@@ -1077,7 +1138,7 @@ class Model_Info(object):
         Returns
         -------
         loglam_M : array
-            Log10 of the Eddington fraction as a function of black hole mass. Functional form is a Schechter function with the given knee, norm, and slope, and is clipped to be between lowlam and hilam for numerical reasons.
+            Log10 of the Eddington fraction as a function of black hole mass clipped to be between lowlam and hilam for numerical reasons.
         """
         if mth is None:
             import numpy as mth
@@ -1086,9 +1147,9 @@ class Model_Info(object):
         loglam_M = mth.clip(loglam_M, lowlam, hilam)
         return loglam_M
     
-    def loglam_func_line(self, mbh_log10, mth=None):
+    def loglamM_func_shen(self, mbh_log10, a=0.469, b=-22.46, mth=None):
         """
-        Calculate Eddington fraction as a function of mass. Schechter function
+        Calculate Eddington fraction as a function of mass. Rearranged version of the fit to the log lambda - log L relation used in `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ equation 29. Was calibrated at z ~ 1.4 and has scatter of 0.4 dex
 
         Parameters
         ----------
@@ -1110,17 +1171,41 @@ class Model_Info(object):
         Returns
         -------
         loglam_M : array
-            Log10 of the Eddington fraction as a function of black hole mass. Functional form is a Schechter function with the given knee, norm, and slope, and is clipped to be between lowlam and hilam for numerical reasons.
+            Log10 of the Eddington fraction as a function of black hole mass
         """
         if mth is None:
             import numpy as mth
-        C_edd = (4 * np.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value
-        a = 0.469
-        b = -22.46
+
         loglam_M = (b + a * mth.log10(10**mbh_log10 * C_edd)) / (1 - a)
         return loglam_M
+    
+    def loglamL_func_shen(self, lum_log10, a=0.469, b=-22.46, mth=None):
+        """
+        Calculate Eddington fraction as a function of luminosity. Based on the fit to the log lambda - log L relation used in `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ equation 29. Was calibrated at z ~ 1.4 and has scatter of 0.4 dex
 
-    def L_from_Mbh_via_lambda(self, mbh_log10, knee, norm, slope, sigma_loglam, redshift, logL_grid, ndens=None, loglam_func='Schechter', lowlam=-15, hilam=11, mth=None):
+        Parameters
+        ----------
+        lum_log10 : array
+            Luminosities to evaluate the luminosity function at, in log10(L/erg/s)
+        a : float
+            Slope of the log lambda - log L relation. Default is 0.469.
+        b : float
+            Intercept of the log lambda - log L relation. Default is -22.46.
+        mth : module, optional
+            Module to use for mathematical functions, default is numpy.
+
+        Returns
+        -------
+        loglam_L : array
+            Log10 of the Eddington fraction as a function of luminosity
+        """
+        if mth is None:
+            import numpy as mth
+
+        loglam_L = a * lum_log10 + b
+        return loglam_L
+
+    def L_from_Mbh_via_lambda(self, mbh_log10, knee, norm, slope, sigma_loglam, redshift, logL_grid, ndens=None, loglam_func='Schechter', fd_func='Zou', lowlam=-15, hilam=11, mth=None):
         """
         Calculate AGN luminosity function by convolving black hole mass function with an Eddington ratio distribution function
 
@@ -1144,6 +1229,8 @@ class Model_Info(object):
             Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.
         loglam_func : str, optional
             Which functional form to use for calculating the mean log lambda as a function of black hole mass, options are 'Schechter' and 'Line'. Default is 'Schechter'
+        fd_func : str, optional
+            Which functional form to use for calculating the AGN fraction as a function of black hole mass and redshift, options are 'Zou' and 'Quad'. Default is 'Zou'
         lowlam : float
             Lower limit of allowable Eddington ratios
         hilam : float
@@ -1160,16 +1247,19 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        C_edd = (4 * np.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value # erg/s per Msun
         logC = np.log10(C_edd)
 
-        fduty = self.fdfunc(mbh_log10, redshift)
+        if fd_func == 'Zou':
+            fduty = self.fdfunc_zou(mbh_log10, redshift)
+
+        elif fd_func == 'Quad':
+            fduty = self.fdfunc_quad(redshift)
         
         if loglam_func == 'Schechter':
-            loglam_M = self.loglam_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth) # Schechter in mbh_log10
+            loglam_M = self.loglamM_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth) # Schechter in mbh_log10
 
         elif loglam_func == 'Line':
-            loglam_M = self.loglam_func_line(mbh_log10, mth=mth) # Linear in mbh_log10
+            loglam_M = self.loglamM_func_line(mbh_log10, mth=mth) # Linear in mbh_log10
 
         mean_L_at_M = mbh_log10[None, :] + logC + loglam_M
         inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
@@ -1182,3 +1272,222 @@ class Model_Info(object):
 
         lum_func = mth.dot(K, ndens * fduty) * dlogM
         return lum_func
+    
+    def Prob_Shen(self, loglambdas, z, alpha=-0.6, lam1=1.5, mth=None):
+        """
+        Eddington ratio distribution function from `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ equation 30.
+
+        Parameters
+        ----------
+        loglambdas : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function
+        z : float
+            Redshift at which to evaluate the probability density function
+        alpha : float, optional
+            The slope of the power law component of the distribution function. Default is -0.6.
+        lam1 : float, optional
+            The characteristic Eddington ratio at which the power law component turns over. Default is 1.5.
+        mth : module, optional
+            Module to use for mathematical functions. Default is numpy.
+
+        Returns
+        -------
+        prob : array
+            The probability density function of log lambda at the given redshift, evaluated at the input log lambda values.
+        """
+        if mth is None:
+            import numpy as mth
+        loglam2 = mth.max([-1.9 + 0.45 * z, mth.log10(0.03)])
+        sig = mth.max([1.03 - 0.15 * z, 0.6]) / mth.log(10)
+        # F = 0.38
+        F = 0.99
+        dPt1 = lambda lam: (1 - F) * (10**(lam))**(1 + alpha) * mth.exp(-10**(lam) / lam1)
+        Pt1 = inte.quad(dPt1, -3, 0)[0]
+        A = (1 - F) / Pt1 
+        
+        return (1 - F) * A * (10**loglambdas)**(1 + alpha) * mth.exp(-10**loglambdas / lam1) + F /\
+        mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambdas - loglam2)**2 / (2 * sig**2)))
+
+    def Prob_Plaw(self, loglambdas, redshift, mth=None):
+        """
+        Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_ equation 1, has scatter of 0.38 dex
+
+        .. warning::
+            Not normalized
+        """
+        if mth is None:
+            import numpy as mth
+
+        gamma1 = -0.65  # +/- 0.04
+        A = -3.15  # +/- 0.08
+        beta = 3.5  # +/_ 0.5
+        z0 = 0.6
+
+        plow = 10**A * (10**loglambdas)**gamma1 * ((1 + redshift)/(1 + z0))**beta
+
+        gamma2 = -2.1  # + 0.3 /- 0.5 A value of -1.65 matches the data in Model C, but -2.1 is from the abstract
+        lambda_break = 0.0
+
+        phi = 10**A * (10**loglambdas)**gamma2 * ((1 + redshift)/(1 + z0))**beta
+
+        plam = mth.where(loglambdas < lambda_break, plow, phi)
+        return plam / np.trapz(plam, loglambdas)
+                
+    
+    def phiL_to_phiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, P_func='Shen', fd_func='Zou', mth=None):
+        """
+        Compute black hole mass function from luminosity function using an Eddington ratio distribution function.
+
+        Parameters
+        ----------
+       fd_func : bool, optional
+            Which functional form to use for calculating AGN fraction, options are 'Zou' and 'Quad'. Default is 'Zou'.
+
+        Returns
+        -------
+        Phi_M : array
+            Black hole mass function
+        """
+        if mth is None:
+            import numpy as mth
+
+        dlogL = mth.log10(L_grid)[1] - mth.log10(L_grid)[0]
+
+        Phi_M = mth.zeros_like(Mbh_grid)
+
+        if P_func is 'Shen':
+            Ploglam = self.Prob_Shen(loglambda_grid, redshift)
+ 
+        elif P_func is 'Plaw':
+            Ploglam = self.Prob_Plaw(loglambda_grid, redshift)
+
+        if fd_func == 'Zou':
+            fduty = self.fdfunc_zou(mth.log10(Mbh_grid), redshift, fdmin=0.03)
+
+        elif fd_func == 'Quad':
+            fduty = self.fdfunc_quad(redshift)
+
+        for i, M in enumerate(Mbh_grid):
+            lam = L_grid / (C_edd * M)
+            loglam = mth.log10(lam)
+
+            P_interp = np.interp(loglam, loglambda_grid, Ploglam,
+                                left=0.0, right=0.0)
+
+            Phi_M[i] = mth.sum(P_interp * phiL * dlogL / fduty / mth.log(10))
+
+        return Phi_M
+
+    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', a=0.469, b=-22.46, fd_func='Quad', mth=None):
+        """
+
+        Parameters
+        ---------
+        logL_grid : array
+            Grid of log luminosities at which the luminosity function is evaluated
+        phiL : array
+            Luminosity function evaluated at logL_grid, in units of Mpc^-3 dex^-1
+        logMbh_grid : array
+            Grid of log black hole masses at which to evaluate the black hole mass function
+        sigma : float
+            Scatter in log lambda at fixed black hole mass, assumed to be Gaussian
+        redshift : float
+            Redshift at which to evaluate the black hole mass function
+        lambda_func : bool, optional
+            Which functional form to use for calculating mean log lambda as a function of black hole mass, options are 'Shen' and 'Line'. Default is 'Shen'.
+        fd_func : bool, optional
+            Which functional form to use for calculating AGN fraction, options are 'Zou' and 'Quad'. Default is 'Zou'.
+        mth : module, optional
+            Module to use for mathematical functions. Default is numpy.
+
+        Returns
+        -------
+        Phi_M : array
+            Black hole mass function
+        """
+
+        if mth is None:
+            import numpy as mth
+
+        logC = mth.log10(C_edd)  # in dex
+
+        dlogL = lum_log10[1] - lum_log10[0]
+
+        logL_2d = lum_log10[:, None]  # axis 0: L
+
+        if loglam_func == 'Shen':
+            loglam = self.loglamL_func_shen(logL_2d, a=a, b=b, mth=mth)
+
+        mean_logM_at_L = logL_2d - loglam - logC
+
+        # gaussian kernel in dex units
+        inv_sqrt2pi = 1.0 / mth.sqrt(2.0 * mth.pi)
+        exponent = -0.5 * ((mbh_log10 - mean_logM_at_L) / sigma)**2
+        K = inv_sqrt2pi / sigma * mth.exp(exponent)  # units: 1/dex
+
+        phiM = mth.dot(phiL, K) * dlogL # result shape (nM,)  in Mpc^-3 dex^-1
+
+        if fd_func == 'Zou':
+            fduty = self.fdfunc_zou(mbh_log10, redshift, fdmin=0.1)
+
+        elif fd_func == 'Quad':
+            fduty = self.fdfunc_quad(redshift)
+        return phiM / fduty
+    
+
+    def phiL_to_phiL_erdf_shan(self, lum_log10, mbh_log10, loglambda_grid, redshift, N0, alpha, beta, mbh_star, mth=None):
+        """
+        Implementation of equation A2 in `Shankar et al (2013) <https://ui.adsabs.harvard.edu/abs/2013MNRAS.428..421S/abstract>`_ to calculate the luminosity
+        function from the number of active black holes convolved with an Eddington ratio distribution funciton.
+
+        Parameters
+        ----------
+        lum_log10 : array
+            Log10 of luminosities at which to evaluate the luminosity function
+        mbh_log10 : array
+            Log10 of black hole masses in solar masses at which to evaluate the luminosity function
+        loglambda_grid : array
+            Grid of log Eddington ratios at which the Eddington ratio distribution function is evaluated
+        redshift : float
+            Redshift at which to evaluate the luminosity function
+        N0 : float
+            Normalization of the active fraction function
+        alpha : float
+            Low-mass slope of the active fraction function
+        beta : float
+            High-mass slope of the active fraction function
+        mbh_star : float
+            Characteristic black hole mass of the active fraction function
+        mth : module, optional
+            Module to use for mathematical functions, default is numpy.
+       
+        Returns
+        -------
+        Phi_L : array
+            Luminosity funciton
+        """
+        if mth is None:
+            import numpy as mth
+
+        dlogM = mth.log10(mbh_log10)[1] - mth.log10(mbh_log10)[0]
+
+        phi_L = mth.zeros_like(lum_log10)
+
+        Ploglam = self.Prob_Shen(loglambda_grid, redshift)
+
+        Nactive = self.fdfunc_shan(mbh_log10, N0=N0, alpha=alpha, beta=beta, mbh_star=mbh_star)
+
+        try:
+            for i, L in enumerate(lum_log10):
+                loglam =  L - mbh_log10 - mth.log10(C_edd)
+                P_interp = mth.interp(loglam, loglambda_grid, Ploglam, left=0.0, right=0.0)
+
+                phi_L[i] = mth.sum(P_interp * Nactive * dlogM / mth.log(10))
+        except:
+            for i, L in enumerate(lum_log10):
+                loglam =  L - mbh_log10 - mth.log10(C_edd)
+                P_interp = mth.interp(loglam, loglambda_grid, Ploglam, left=0.0, right=0.0)
+
+                phi_L = mth.set_subtensor(phi_L[i], mth.sum(P_interp * Nactive * dlogM / mth.log(10)))
+
+        return phi_L
