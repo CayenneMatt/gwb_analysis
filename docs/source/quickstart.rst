@@ -3,7 +3,7 @@ Quickstart
 
 The primary module, analyze_model, has one class, Model_Info with many attributes and methods. This may get split into multiple modules eventually.
 
-This class enables posterior calculation and plotting. The examples below are written to use the example data hosted on `Dropbox <https://www.dropbox.com/home/Cayenne%20Matt/github#>`_. These files are the "Le03ne" and "Le03ev" models from `Matt et al. (2026) <https://ui.adsabs.harvard.edu/abs/2026ApJ...997..188M/abstract>`_.
+This class enables posterior calculation and plotting. The examples below are written to use the example data hosted on `Dropbox <https://www.dropbox.com/scl/fo/w4bimbjtu0wgl3tsyekvj/ABygWjCa5DbX1z_n3AFwDiQ?rlkey=30pxb09xdkkiteag0twheyx85&st=pf2w39rz&dl=0>`_. These files are the "Le03ne" and "Le03ev" models from `Matt et al. (2026) <https://ui.adsabs.harvard.edu/abs/2026ApJ...997..188M/abstract>`_.
 
 Here is an example of how to read in some data and caclulate posteriors.
 
