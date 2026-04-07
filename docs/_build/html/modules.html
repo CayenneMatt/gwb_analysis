@@ -333,55 +333,61 @@ will be the same as fiducial values unless get_posteriors() is called</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.add_spectrum" title="gwb_analysis.analyze_model.Model_Info.add_spectrum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">add_spectrum</span></code></a>(ax[, lw, errorbars, label])</p></td>
 <td><p>Add the spectrum of the model to a given axis, with optional error bars and label.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhargal" title="gwb_analysis.analyze_model.Model_Info.bhargal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhargal</span></code></a>(mbh_log10, redshift[, mth])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhar_bondi" title="gwb_analysis.analyze_model.Model_Info.bhar_bondi"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhar_bondi</span></code></a>(mbh_log10[, rho, cs, mth])</p></td>
+<td><p>Calculate black hole accretion rate from bondi accretion.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhar_gal" title="gwb_analysis.analyze_model.Model_Info.bhar_gal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhar_gal</span></code></a>(mbh_log10, redshift[, mth])</p></td>
 <td><p>Calculate black hole accretion rate as a function of black hole mass and redshift using the MMBulge relation and the GSMF.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf" title="gwb_analysis.analyze_model.Model_Info.bhmf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhmf</span></code></a>(mbh_log10, redz)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf" title="gwb_analysis.analyze_model.Model_Info.bhmf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhmf</span></code></a>(mbh_log10, redz)</p></td>
 <td><p>Produce the black hole mass function at a given redshift.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf_err" title="gwb_analysis.analyze_model.Model_Info.bhmf_err"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhmf_err</span></code></a>(mbh_log10, redz[, ndraws])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf_err" title="gwb_analysis.analyze_model.Model_Info.bhmf_err"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhmf_err</span></code></a>(mbh_log10, redz[, ndraws])</p></td>
 <td><p>Produces the black hole mass function at a given redshift.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf_from_gsmf" title="gwb_analysis.analyze_model.Model_Info.bhmf_from_gsmf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhmf_from_gsmf</span></code></a>(mstar_log10, mbh_log10, redshift)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf_from_gsmf" title="gwb_analysis.analyze_model.Model_Info.bhmf_from_gsmf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bhmf_from_gsmf</span></code></a>(mstar_log10, mbh_log10, redshift)</p></td>
 <td><p>Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.calculate_radiative_efficiency" title="gwb_analysis.analyze_model.Model_Info.calculate_radiative_efficiency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_radiative_efficiency</span></code></a>(zval, mbh_log10)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.calculate_radiative_efficiency" title="gwb_analysis.analyze_model.Model_Info.calculate_radiative_efficiency"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_radiative_efficiency</span></code></a>(zval, mbh_log10)</p></td>
 <td><p>Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the luminosity function at the average redshift.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.corner_plot" title="gwb_analysis.analyze_model.Model_Info.corner_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corner_plot</span></code></a>([nbins, cmap])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.corner_plot" title="gwb_analysis.analyze_model.Model_Info.corner_plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corner_plot</span></code></a>([nbins, cmap])</p></td>
 <td><p>Old and slow, but tested version of corner plot, will be removed in favor of corner_plot_fast() pending appropriate testing.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.corner_plot_fast" title="gwb_analysis.analyze_model.Model_Info.corner_plot_fast"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corner_plot_fast</span></code></a>([nbins, cmap])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.corner_plot_fast" title="gwb_analysis.analyze_model.Model_Info.corner_plot_fast"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corner_plot_fast</span></code></a>([nbins, cmap])</p></td>
 <td><p>Faster version of corner plot.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_davis" title="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_davis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eta_from_mbh_davis</span></code></a>(mbh_log10)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_davis" title="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_davis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eta_from_mbh_davis</span></code></a>(mbh_log10)</p></td>
 <td><p>Calulate radiative efficiency as a function of black hole mass using the fit from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2011ApJ...728...98D/abstract">Davis &amp; Laor (2011)</a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_line" title="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eta_from_mbh_line</span></code></a>(mbh_log10[, mth])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_line" title="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eta_from_mbh_line</span></code></a>(mbh_log10[, mth])</p></td>
 <td><p>Calculate radiative efficiency as a function of black hole mass using the a line fit to the data from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract">Li et al. (2012)</a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic" title="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eta_from_mbh_logistic</span></code></a>(mbh_log10[, min, k, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic" title="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">eta_from_mbh_logistic</span></code></a>(mbh_log10[, min, k, ...])</p></td>
 <td><p>Calulate radiative efficiency as a function of black hole mass a logistic fit to the data from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract">Li et al. (2012)</a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.fdfunc" title="gwb_analysis.analyze_model.Model_Info.fdfunc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fdfunc</span></code></a>(mbh_log10, redshift[, fdmin])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.fdfunc" title="gwb_analysis.analyze_model.Model_Info.fdfunc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fdfunc</span></code></a>(mbh_log10, redshift[, fdmin])</p></td>
 <td><p>Fit to agn fraction as a function of stellar mass from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics">Zou et al. (2024)</a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_posteriors" title="gwb_analysis.analyze_model.Model_Info.get_posteriors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_posteriors</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_posteriors" title="gwb_analysis.analyze_model.Model_Info.get_posteriors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_posteriors</span></code></a>()</p></td>
 <td><p>Get the median posterior values for each parameter in the model</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_priors" title="gwb_analysis.analyze_model.Model_Info.get_priors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_priors</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_priors" title="gwb_analysis.analyze_model.Model_Info.get_priors"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_priors</span></code></a>()</p></td>
 <td><p>Returns parameter names and sampled distributions from the prior parameter space</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_shend" title="gwb_analysis.analyze_model.Model_Info.get_shend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_shend</span></code></a>(redshift[, path_to_shen_data])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_shend" title="gwb_analysis.analyze_model.Model_Info.get_shend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_shend</span></code></a>(redshift[, path_to_shen_data])</p></td>
 <td><p>Retrieve the data from the <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a>  bolometric luminosity function at a given redshift.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_shenf" title="gwb_analysis.analyze_model.Model_Info.get_shenf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_shenf</span></code></a>(redshift[, path_to_shen_fits])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.get_shenf" title="gwb_analysis.analyze_model.Model_Info.get_shenf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_shenf</span></code></a>(redshift[, path_to_shen_fits])</p></td>
 <td><p>Retrieve the fit to the <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract">Shen et al. 2020</a> bolometric luminosity function at a given redshift.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.gsmf" title="gwb_analysis.analyze_model.Model_Info.gsmf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gsmf</span></code></a>(mstar_log10, redz)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.gsmf" title="gwb_analysis.analyze_model.Model_Info.gsmf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gsmf</span></code></a>(mstar_log10, redz)</p></td>
 <td><p>Produces the galaxy stellar mass function at a given redshift.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.loglam_func" title="gwb_analysis.analyze_model.Model_Info.loglam_func"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loglam_func</span></code></a>(mbh_log10, knee, norm, slope[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.loglam_func" title="gwb_analysis.analyze_model.Model_Info.loglam_func"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loglam_func</span></code></a>(mbh_log10, knee, norm, slope[, ...])</p></td>
+<td><p>Calculate Eddington fraction as a function of mass.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.loglam_func_line" title="gwb_analysis.analyze_model.Model_Info.loglam_func_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loglam_func_line</span></code></a>(mbh_log10[, mth])</p></td>
 <td><p>Calculate Eddington fraction as a function of mass.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.plot_histogram" title="gwb_analysis.analyze_model.Model_Info.plot_histogram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_histogram</span></code></a>(ax, param_name[, nbins, ...])</p></td>
@@ -710,8 +716,8 @@ Here stellar mass is inferred from black hole mass</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.bhargal">
-<span class="sig-name descname"><span class="pre">bhargal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.bhargal" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.bhar_gal">
+<span class="sig-name descname"><span class="pre">bhar_gal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.bhar_gal" title="Link to this definition">¶</a></dt>
 <dd><p>Calculate black hole accretion rate as a function of black hole mass and redshift using the MMBulge relation and the GSMF.</p>
 <p>The function in the paper is in terms of stellar mass, but we can use the MMBulge relation to convert it to a function of black hole mass.
 Fit from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics">Zou et al. (2024)</a>.</p>
@@ -720,9 +726,9 @@ Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses at which to evaluate the BHARGAL</p>
+<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses at which to evaluate the BHAR</p>
 </dd>
-<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>Redshift at which to evaluate the BHARGAL</p>
+<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>Redshift at which to evaluate the BHAR</p>
 </dd>
 <dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
 </dd>
@@ -730,7 +736,35 @@ Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><dl class="simple">
-<dt><strong>bhargal</strong><span class="classifier">array-like</span></dt><dd><p>Black hole accretion rate in Msun / year as a function of black hole mass and redshift</p>
+<dt><strong>bhar</strong><span class="classifier">array-like</span></dt><dd><p>Black hole accretion rate in Msun / year as a function of black hole mass and redshift</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.bhar_bondi">
+<span class="sig-name descname"><span class="pre">bhar_bondi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.bhar_bondi" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate black hole accretion rate from bondi accretion.</p>
+<p>Msun / year
+Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses at which to evaluate the BHAR</p>
+</dd>
+<dt><strong>rho</strong><span class="classifier">float</span></dt><dd><p>Density of the gas in the vicinity of the black hole, in units of g / cm^3, Default is 0.1</p>
+</dd>
+<dt><strong>cs</strong><span class="classifier">float</span></dt><dd><p>Sound speed of the gas in the vicinity of the black hole, in units of km/s, Default is 100</p>
+</dd>
+<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>bhar</strong><span class="classifier">array-like</span></dt><dd><p>Black hole accretion rate in Msun / year as a function of black hole mass and redshift</p>
 </dd>
 </dl>
 </dd>
@@ -788,8 +822,12 @@ Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic">
-<span class="sig-name descname"><span class="pre">eta_from_mbh_logistic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">eta_from_mbh_logistic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9.7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic" title="Link to this definition">¶</a></dt>
 <dd><p>Calulate radiative efficiency as a function of black hole mass a logistic fit to the data from <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract">Li et al. (2012)</a>. No redshift dependence.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use m0 = 8.4 for a smoother transition between high and low values of radiative efficiency.</p>
+</div>
 <div class="admonition caution">
 <p class="admonition-title">Caution</p>
 <p>Not advised to use for redshifts below 0.8.</p>
@@ -799,11 +837,11 @@ Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p
 <dd class="field-odd"><dl class="simple">
 <dt><strong>mbh_log10</strong><span class="classifier">array-like</span></dt><dd><p>Log10 of black hole mass in solar masses at which to evaluate the radiative efficiency</p>
 </dd>
-<dt><strong>min</strong><span class="classifier">float, optional</span></dt><dd><p>Minimum value of the logistic function, default is 0.25. Default is 0.25</p>
+<dt><strong>min</strong><span class="classifier">float, optional</span></dt><dd><p>Minimum value of the logistic function, default is 0.001. Default is 0.001</p>
 </dd>
 <dt><strong>k</strong><span class="classifier">float, optional</span></dt><dd><p>Stepth of the logistic function. Default is -1.4</p>
 </dd>
-<dt><strong>m0</strong><span class="classifier">float, optional</span></dt><dd><p>The value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 8.4</p>
+<dt><strong>m0</strong><span class="classifier">float, optional</span></dt><dd><p>The value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 9.1</p>
 </dd>
 <dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
 </dd>
@@ -820,7 +858,7 @@ Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)</p
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_mdot_eta_func">
-<span class="sig-name descname"><span class="pre">L_from_Mbh_via_mdot_eta_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lums_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ndens</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Davis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rad_eff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_mdot_eta_func" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">L_from_Mbh_via_mdot_eta_func</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lums_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ndens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scatter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eta_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Davis'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rad_eff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Gal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_mdot_eta_func" title="Link to this definition">¶</a></dt>
 <dd><p>Calculate luminosity from black hole mass using the accretion rate and radiative efficiency.
 The accretion rate is calculated using the MMBulge relation and the GSMF, and the radiative efficiency is calculated using one of several functions of black hole mass.</p>
 <dl class="field-list simple">
@@ -832,10 +870,14 @@ The accretion rate is calculated using the MMBulge relation and the GSMF, and th
 </dd>
 <dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>Redshift at which to evaluate the luminosity function</p>
 </dd>
+<dt><strong>ndens</strong><span class="classifier">array, optional</span></dt><dd><p>Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.</p>
+</dd>
 <dt><strong>eta_func</strong><span class="classifier">bool, optional</span></dt><dd><p>Which functional form to use for calculating radiative efficiency,
 options are ‘Davis’, ‘Logistic’, ‘Line’, and ‘Constant’. Default is ‘Davis’</p>
 </dd>
 <dt><strong>rad_eff</strong><span class="classifier">float, optional</span></dt><dd><p>The constantvalue of the radiative efficiency to use when eta_func is ‘Constant’. Default is None</p>
+</dd>
+<dt><strong>mdot_func</strong><span class="classifier">bool, optional</span></dt><dd><p>Which functional form to use for calculating accretion rate, options are ‘Gal’, ‘Bondi’, and ‘Lambda’. Default is ‘Gal’.</p>
 </dd>
 <dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
 </dd>
@@ -890,8 +932,40 @@ and radiative efficiency</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.loglam_func_line">
+<span class="sig-name descname"><span class="pre">loglam_func_line</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.loglam_func_line" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate Eddington fraction as a function of mass. Schechter function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>mbh_log10</strong><span class="classifier">array</span></dt><dd><p>Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)</p>
+</dd>
+<dt><strong>knee</strong><span class="classifier">float</span></dt><dd><p>The turnover point of the Schechter function</p>
+</dd>
+<dt><strong>norm</strong><span class="classifier">float</span></dt><dd><p>The normalization of the Schechter function</p>
+</dd>
+<dt><strong>slope</strong><span class="classifier">float</span></dt><dd><p>The slope of the Schechter function</p>
+</dd>
+<dt><strong>lowlam</strong><span class="classifier">float</span></dt><dd><p>Lower limit of allowable Eddington ratios</p>
+</dd>
+<dt><strong>hilam</strong><span class="classifier">float</span></dt><dd><p>Upper limit of allowable Eddington ratios</p>
+</dd>
+<dt><strong>mth</strong><span class="classifier">module, optional</span></dt><dd><p>Module to use for mathematical functions, default is numpy.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>loglam_M</strong><span class="classifier">array</span></dt><dd><p>Log10 of the Eddington fraction as a function of black hole mass. Functional form is a Schechter function with the given knee, norm, and slope, and is clipped to be between lowlam and hilam for numerical reasons.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_lambda">
-<span class="sig-name descname"><span class="pre">L_from_Mbh_via_lambda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">knee</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slope</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_loglam</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logL_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lowlam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hilam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_lambda" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">L_from_Mbh_via_lambda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mbh_log10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">knee</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slope</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma_loglam</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redshift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logL_grid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ndens</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loglam_func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Schechter'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lowlam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hilam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_lambda" title="Link to this definition">¶</a></dt>
 <dd><p>Calculate AGN luminosity function by convolving black hole mass function with an Eddington ratio distribution function</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -903,6 +977,16 @@ and radiative efficiency</p>
 <dt><strong>norm</strong><span class="classifier">float</span></dt><dd><p>The normalization of the Schechter function</p>
 </dd>
 <dt><strong>slope</strong><span class="classifier">float</span></dt><dd><p>The slope of the Schechter function</p>
+</dd>
+<dt><strong>sigma_loglam</strong><span class="classifier">float</span></dt><dd><p>The scatter in log lambda at fixed black hole mass, which is assumed to be Gaussian</p>
+</dd>
+<dt><strong>redshift</strong><span class="classifier">float</span></dt><dd><p>Redshift at which to evaluate the luminosity function</p>
+</dd>
+<dt><strong>logL_grid</strong><span class="classifier">array</span></dt><dd><p>The grid of log luminosities at which to evaluate the luminosity function</p>
+</dd>
+<dt><strong>ndens</strong><span class="classifier">array, optional</span></dt><dd><p>Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.</p>
+</dd>
+<dt><strong>loglam_func</strong><span class="classifier">str, optional</span></dt><dd><p>Which functional form to use for calculating the mean log lambda as a function of black hole mass, options are ‘Schechter’ and ‘Line’. Default is ‘Schechter’</p>
 </dd>
 <dt><strong>lowlam</strong><span class="classifier">float</span></dt><dd><p>Lower limit of allowable Eddington ratios</p>
 </dd>
@@ -988,12 +1072,14 @@ and radiative efficiency</p>
 <li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.calculate_radiative_efficiency"><code class="docutils literal notranslate"><span class="pre">Model_Info.calculate_radiative_efficiency()</span></code></a></li>
 <li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.fdfunc"><code class="docutils literal notranslate"><span class="pre">Model_Info.fdfunc()</span></code></a></li>
 <li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhmf_from_gsmf"><code class="docutils literal notranslate"><span class="pre">Model_Info.bhmf_from_gsmf()</span></code></a></li>
-<li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhargal"><code class="docutils literal notranslate"><span class="pre">Model_Info.bhargal()</span></code></a></li>
+<li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhar_gal"><code class="docutils literal notranslate"><span class="pre">Model_Info.bhar_gal()</span></code></a></li>
+<li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.bhar_bondi"><code class="docutils literal notranslate"><span class="pre">Model_Info.bhar_bondi()</span></code></a></li>
 <li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_davis"><code class="docutils literal notranslate"><span class="pre">Model_Info.eta_from_mbh_davis()</span></code></a></li>
 <li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_line"><code class="docutils literal notranslate"><span class="pre">Model_Info.eta_from_mbh_line()</span></code></a></li>
 <li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.eta_from_mbh_logistic"><code class="docutils literal notranslate"><span class="pre">Model_Info.eta_from_mbh_logistic()</span></code></a></li>
 <li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_mdot_eta_func"><code class="docutils literal notranslate"><span class="pre">Model_Info.L_from_Mbh_via_mdot_eta_func()</span></code></a></li>
 <li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.loglam_func"><code class="docutils literal notranslate"><span class="pre">Model_Info.loglam_func()</span></code></a></li>
+<li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.loglam_func_line"><code class="docutils literal notranslate"><span class="pre">Model_Info.loglam_func_line()</span></code></a></li>
 <li><a class="reference internal" href="#gwb_analysis.analyze_model.Model_Info.L_from_Mbh_via_lambda"><code class="docutils literal notranslate"><span class="pre">Model_Info.L_from_Mbh_via_lambda()</span></code></a></li>
 </ul>
 </li>
