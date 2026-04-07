@@ -6,7 +6,7 @@ import scipy.stats as stats
 
 import holodeck as holo
 import holodeck.sams as sams
-from holodeck.constants import MSOL
+from holodeck.constants import MSOL, NWTG, KMPERSEC
 from holodeck import librarian
 
 import kalepy as kale
@@ -132,6 +132,9 @@ class Model_Info(object):
         id = np.where((self.param_names == 'mmb_zplaw') | (self.param_names == 'mmb_zplaw_amp') | (self.param_names == 'mmb_zplaw_slope') | (self.param_names == 'mmb_zplaw_scatter'))[0]
         if len(id) > 0:
             self.idcs = id
+
+        if 'mmb_zplaw' in self.param_names:
+            self.param_names[id] = 'mmb_zplaw_amp'
         
         # Dictionary of priors to be modified by get_posteriors(), note that LM* models have different priors, but currently sample every parameter.
         self.space_class = librarian.param_spaces_dict[self.param_space_name]
@@ -206,7 +209,6 @@ class Model_Info(object):
                             'gmr_qgammam'           : r'$\gamma_{GMR}$', # r'gmr_qgammam',
                             'mmb_mamp_log10'        : r"$\alpha_{0}$",
                             'mmb_plaw'              : r"$\beta_{0}$",
-                            'mmb_zplaw'             : r'$\alpha_z$',
                             'mmb_zplaw_amp'         : r'$\alpha_z$',
                             'mmb_zplaw_slope'       : r'$\beta_z$',
                             'mmb_zplaw_scatter'     : r'$\epsilon_z$',
@@ -517,12 +519,10 @@ class Model_Info(object):
         alpha2 = self.params['gsmf_alpha_two']
         
         gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
-        
-        zplaw_amp = self.params['mmb_zplaw'] if 'mmb_zplaw' in self.params.keys() else self.params['mmb_zplaw_amp']
-            
+                    
         mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.params['mmb_mamp_log10'],
                                                                 mplaw = self.params['mmb_plaw'],
-                                                                zplaw_amp=zplaw_amp,
+                                                                zplaw_amp=self.params['mmb_zplaw_amp'],
                                                                 zplaw_slope=self.params['mmb_zplaw_slope'],
                                                                 zplaw_scatter=self.params['mmb_zplaw_scatter'],
                                                                 scatter_dex = self.params['mmb_scatter_dex'])
@@ -568,11 +568,9 @@ class Model_Info(object):
 
             gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
             
-            zplaw_amp = self.bhmf_dict['mmb_zplaw'][j] if 'mmb_zplaw' in self.params.keys() else self.bhmf_dict['mmb_zplaw_amp'][j]
-
             mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.bhmf_dict['mmb_mamp_log10'][j],
                                                             mplaw = self.bhmf_dict['mmb_plaw'][j],
-                                                            zplaw_amp=zplaw_amp,
+                                                            zplaw_amp=self.bhmf_dict['mmb_zplaw_amp'][j],
                                                             zplaw_slope=self.bhmf_dict['mmb_zplaw_slope'][j],
                                                             zplaw_scatter=self.bhmf_dict['mmb_zplaw_scatter'][j],
                                                             scatter_dex = self.bhmf_dict['mmb_scatter_dex'][j])
@@ -746,8 +744,7 @@ class Model_Info(object):
         norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
         slope_fit = [ 0.01273298, -0.28087742, 1.5361624 ]  # [0.2927610944131739, -6.537700910036786, 35.65876956759064]
 
-        zplaw_amp = self.params['mmb_zplaw'] if 'mmb_zplaw' in self.params.keys() else self.params['mmb_zplaw_amp']
-        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**self.params['mmb_zplaw_amp']
         mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
 
         mstar_log10 = (mbh_log10 - np.log10(mamp_z)) / mplaw_z + 11
@@ -785,8 +782,7 @@ class Model_Info(object):
 
         scatter = np.log10(10**self.params['mmb_scatter_dex'] * (1.0 + redshift)**self.params['mmb_zplaw_scatter'])
 
-        zplaw_amp = self.params['mmb_zplaw'] if 'mmb_zplaw' in self.params.keys() else self.params['mmb_zplaw_amp']
-        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**self.params['mmb_zplaw_amp']
 
         mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
 
@@ -800,7 +796,7 @@ class Model_Info(object):
 
         return bhmf_conv
     
-    def bhargal(self, mbh_log10, redshift, mth=None):
+    def bhar_gal(self, mbh_log10, redshift, mth=None):
         """
         Calculate black hole accretion rate as a function of black hole mass and redshift using the MMBulge relation and the GSMF.
 
@@ -813,22 +809,21 @@ class Model_Info(object):
         Parameters
         ----------
         mbh_log10 : array-like
-            Log10 of black hole mass in solar masses at which to evaluate the BHARGAL
+            Log10 of black hole mass in solar masses at which to evaluate the BHAR
         redshift : float
-            Redshift at which to evaluate the BHARGAL
+            Redshift at which to evaluate the BHAR
         mth : module, optional
             Module to use for mathematical functions, default is numpy.
 
         Returns
         -------
-        bhargal : array-like
+        bhar : array-like
             Black hole accretion rate in Msun / year as a function of black hole mass and redshift
         """
         if mth is None:
             import numpy as mth
         
-        zplaw_amp = self.params['mmb_zplaw'] if 'mmb_zplaw' in self.params.keys() else self.params['mmb_zplaw_amp']
-        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**zplaw_amp
+        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**self.params['mmb_zplaw_amp']
         mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
 
         mstar_log10 = (mbh_log10 - mth.log10(mamp_z)) / mplaw_z + 11
@@ -837,6 +832,38 @@ class Model_Info(object):
         intercept = c * (1 - mth.exp(-k * redshift)) + b
 
         return 1.3595507359218555 * mstar_log10 + intercept
+
+    def bhar_bondi(self, mbh_log10, rho=0.1, cs=100, mth=None):
+        """
+        Calculate black hole accretion rate from bondi accretion.
+
+        Msun / year
+        Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)
+
+        Parameters
+        ----------
+        mbh_log10 : array-like
+            Log10 of black hole mass in solar masses at which to evaluate the BHAR
+        rho : float
+            Density of the gas in the vicinity of the black hole, in units of g / cm^3, Default is 0.1
+        cs : float
+            Sound speed of the gas in the vicinity of the black hole, in units of km/s, Default is 100
+        mth : module, optional
+            Module to use for mathematical functions, default is numpy.
+
+        Returns
+        -------
+        bhar : array-like
+            Black hole accretion rate in Msun / year as a function of black hole mass and redshift
+        """
+        if mth is None:
+            import numpy as mth
+        
+        mp = 1.6726e-24  # mass of proton in grams
+        
+        bhar = 4 * mth.pi * (NWTG * 10**mbh_log10 * MSOL )**2 * rho * mp / (cs * KMPERSEC)**3 # in grams / second
+
+        return bhar
     
     def eta_from_mbh_davis(self, mbh_log10):
         """
@@ -856,7 +883,6 @@ class Model_Info(object):
         """
 
         etas = 0.089 * (10**mbh_log10/ 1e8)**0.52
-        etas[etas > 1] = 1
         return etas
     
     def eta_from_mbh_line(self, mbh_log10, mth=None):
@@ -896,13 +922,15 @@ class Model_Info(object):
         x2 = 7
         etas[mbh_log10 <= 7] = (y2 - y1) / (x2 - x1) * (mbh_log10[mbh_log10 <= 7] - x1) + y1
 
-        etas[etas > 1] = 1
         return etas
 
-    def eta_from_mbh_logistic(self, mbh_log10, min=0.25, k=-1.4, m0=8.4, mth=None):
+    def eta_from_mbh_logistic(self, mbh_log10, min=0.001, k=-1.4, m0=9.7, mth=None):
         """
         Calulate radiative efficiency as a function of black hole mass a logistic fit to the data from `Li et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract>`_. No redshift dependence.
         
+        .. tip::
+            Use m0 = 8.4 for a smoother transition between high and low values of radiative efficiency.
+
         .. caution::
             Not advised to use for redshifts below 0.8.
 
@@ -911,11 +939,11 @@ class Model_Info(object):
         mbh_log10 : array-like
             Log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
         min : float, optional
-            Minimum value of the logistic function, default is 0.25. Default is 0.25
+            Minimum value of the logistic function, default is 0.001. Default is 0.001
         k : float, optional
             Stepth of the logistic function. Default is -1.4
         m0 : float, optional
-            The value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 8.4
+            The value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 9.1
         mth : module, optional
             Module to use for mathematical functions, default is numpy.
 
@@ -933,7 +961,7 @@ class Model_Info(object):
         return l / (1 + mth.exp(k * (mbh_log10 - m0))) + min
     
 
-    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, ndens, eta_func = 'Davis', rad_eff=None, mth=None):
+    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, ndens=None, scatter=None, eta_func = 'Davis', rad_eff=None, mdot_func='Gal', mth=None):
         """
         Calculate luminosity from black hole mass using the accretion rate and radiative efficiency.
         The accretion rate is calculated using the MMBulge relation and the GSMF, and the radiative efficiency is calculated using one of several functions of black hole mass.
@@ -946,11 +974,15 @@ class Model_Info(object):
             Array of log10 luminosities at which to evaluate the luminosity function
         redshift : float
             Redshift at which to evaluate the luminosity function
+        ndens : array, optional
+            Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.
         eta_func : bool, optional
             Which functional form to use for calculating radiative efficiency,
             options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
         rad_eff : float, optional
             The constantvalue of the radiative efficiency to use when eta_func is 'Constant'. Default is None
+        mdot_func : bool, optional
+            Which functional form to use for calculating accretion rate, options are 'Gal', 'Bondi', and 'Lambda'. Default is 'Gal'.
         mth : module, optional
             Module to use for mathematical functions, default is numpy.
 
@@ -970,32 +1002,41 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        scattereta = 0.5
-        scattermdotmstar = 0.3
+        if scatter is None:
+            scattereta = 0.5
+            scattermdotmstar = 0.3
 
-        scattermmb = mth.log10(10**self.params['mmb_scatter_dex'] * (1.0 + redshift)**self.params['mmb_zplaw_scatter'])
-        scatter = mth.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
-
-        # scatter = 0.8
-
-        # ndens = self.bhmf(mbh_log10, redshift)
+            scattermmb = mth.log10(10**self.params['mmb_scatter_dex'] * (1.0 + redshift)**self.params['mmb_zplaw_scatter'])
+            scatter = mth.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
 
         if eta_func == 'Davis':
             etas = self.eta_from_mbh_davis(mbh_log10)
+            etas = mth.clip(etas, 0.001, 1.0)
 
         elif eta_func == 'Logistic':
             etas = self.eta_from_mbh_logistic(mbh_log10, mth=mth)
+            etas = mth.clip(etas, 0.001, 1.0)
         
         elif eta_func == 'Line':
             etas = self.eta_from_mbh_line(mbh_log10, mth=mth)
+            etas = mth.clip(etas, 0.001, 1.0)
         
         elif eta_func == 'Constant':
             if rad_eff is not None:
                 etas = rad_eff
             else:
                 raise ValueError("Please provide a radiative efficiency value.")
-        
-        Mdot_mean = 10**self.bhargal(mbh_log10, redshift, mth=mth) * 6.3008906592961785e+25 #* 0.1/etas # Msun / year to g / s
+            
+        if mdot_func == 'Gal':   
+            Mdot_mean = 10**self.bhar_gal(mbh_log10, redshift, mth=mth) * 6.3008906592961785e+25 / 0.1  # Msun / year to g / s
+
+        if mdot_func == 'Bondi':
+            Mdot_mean = self.bhar_bondi(mbh_log10, mth=mth)  # to g / s
+
+        elif mdot_func == 'Lambda':
+            # Not reliable, just for testing
+            lambda_Edd = 0.1
+            Mdot_mean = 2.2 * 10**mbh_log10 / 1e8 * 6.3008906592961785e+25 * lambda_Edd
         
         Lmean_log10 = mth.log10(Mdot_mean * (2.9979246e10)**2 * etas)
 
@@ -1003,6 +1044,9 @@ class Model_Info(object):
         K = inv_sqrt2pi/scatter * mth.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
 
         fduty = self.fdfunc(mbh_log10, redshift)
+
+        if ndens is None:
+            ndens = self.bhmf(mbh_log10, redz=redshift)
 
         dlogM = mbh_log10[1] - mbh_log10[0]
         lf_conv = mth.dot(K, ndens * fduty) * dlogM
@@ -1041,8 +1085,42 @@ class Model_Info(object):
         loglam_M = np.log10(mth.log(10) * 10**norm * 10**((rat)*(slope+1)) * mth.exp(-10**rat))
         loglam_M = mth.clip(loglam_M, lowlam, hilam)
         return loglam_M
+    
+    def loglam_func_line(self, mbh_log10, mth=None):
+        """
+        Calculate Eddington fraction as a function of mass. Schechter function
 
-    def L_from_Mbh_via_lambda(self, mbh_log10, knee, norm, slope, sigma_loglam, redshift, logL_grid, lowlam=-5, hilam=1, mth=None):
+        Parameters
+        ----------
+        mbh_log10 : array
+            Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
+        knee : float
+            The turnover point of the Schechter function
+        norm : float
+            The normalization of the Schechter function
+        slope : float
+            The slope of the Schechter function
+        lowlam : float
+            Lower limit of allowable Eddington ratios
+        hilam : float
+            Upper limit of allowable Eddington ratios
+        mth : module, optional
+            Module to use for mathematical functions, default is numpy.
+
+        Returns
+        -------
+        loglam_M : array
+            Log10 of the Eddington fraction as a function of black hole mass. Functional form is a Schechter function with the given knee, norm, and slope, and is clipped to be between lowlam and hilam for numerical reasons.
+        """
+        if mth is None:
+            import numpy as mth
+        C_edd = (4 * np.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value
+        a = 0.469
+        b = -22.46
+        loglam_M = (b + a * mth.log10(10**mbh_log10 * C_edd)) / (1 - a)
+        return loglam_M
+
+    def L_from_Mbh_via_lambda(self, mbh_log10, knee, norm, slope, sigma_loglam, redshift, logL_grid, ndens=None, loglam_func='Schechter', lowlam=-15, hilam=11, mth=None):
         """
         Calculate AGN luminosity function by convolving black hole mass function with an Eddington ratio distribution function
 
@@ -1056,6 +1134,16 @@ class Model_Info(object):
             The normalization of the Schechter function
         slope : float
             The slope of the Schechter function
+        sigma_loglam : float
+            The scatter in log lambda at fixed black hole mass, which is assumed to be Gaussian
+        redshift : float
+            Redshift at which to evaluate the luminosity function
+        logL_grid : array
+            The grid of log luminosities at which to evaluate the luminosity function
+        ndens : array, optional
+            Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.
+        loglam_func : str, optional
+            Which functional form to use for calculating the mean log lambda as a function of black hole mass, options are 'Schechter' and 'Line'. Default is 'Schechter'
         lowlam : float
             Lower limit of allowable Eddington ratios
         hilam : float
@@ -1077,7 +1165,11 @@ class Model_Info(object):
 
         fduty = self.fdfunc(mbh_log10, redshift)
         
-        loglam_M = self.loglam_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth) # Schechter in mbh_log10
+        if loglam_func == 'Schechter':
+            loglam_M = self.loglam_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth) # Schechter in mbh_log10
+
+        elif loglam_func == 'Line':
+            loglam_M = self.loglam_func_line(mbh_log10, mth=mth) # Linear in mbh_log10
 
         mean_L_at_M = mbh_log10[None, :] + logC + loglam_M
         inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
@@ -1085,7 +1177,8 @@ class Model_Info(object):
 
         dlogM = mbh_log10[1] - mbh_log10[0]
 
-        ndens = self.bhmf(mbh_log10, redz=redshift)
+        if ndens is None:
+            ndens = self.bhmf(mbh_log10, redz=redshift)
 
         lum_func = mth.dot(K, ndens * fduty) * dlogM
         return lum_func
