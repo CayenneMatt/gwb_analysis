@@ -5,7 +5,7 @@ This module is not yet pip installable. If you clone the main `GitHub Page <http
 
 .. code-block:: console
 
-   pip install -e.
+   pip install -e .
 
 There is no requirements.txt file, but this library is dependent on `holodeck <https://github.com/nanograv/holodeck>`_. Make sure you have holodeck installed and functioning:
 
