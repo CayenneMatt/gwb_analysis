@@ -11,7 +11,10 @@ Here is an example of how to read in some data and caclulate posteriors.
 .. code-block:: python
    
    from gwb_analysis.gwb_analysis.analyze_model import Model_Info
-   model1 = Model_Info(path='path/to/file/', file='model_file.npz', model_name='Model1', color='steelblue', line_style='--', threshold=0.5).get_posteriors()
+   model1 = Model_Info(path='path/to/file/', file='model_file.npz', model_name='Model1',
+   color='steelblue', line_style='--', threshold=0.5).get_posteriors()
+
+The object "model1" has a "params" attribute which is a dictionary of parameter values. The entries in this dictionary will be the default values until "get_posteriors()" is run, after which the entries will be the medians of the posterior distributions.
 
 Once the model object is created, you can look at the maximum likelihood spectrum.
    
@@ -19,7 +22,8 @@ Once the model object is created, you can look at the maximum likelihood spectru
 
    import matplotlib.pyplot as plt
    from gwb_analysis.gwb_analysis.analyze_model import Model_Info
-   model1 = Model_Info(path='path/to/file/', file='model_file.npz', model_name='Model1', color='steelblue', line_style='--', threshold=0.5).get_posteriors()
+   model1 = Model_Info(path='path/to/file/', file='model_file.npz', model_name='Model1',
+   color='steelblue', line_style='--', threshold=0.5).get_posteriors()
 
    fig, ax = plt.subplots(1, 1, figsize=(10, 7))
    model1.add_spectrum(ax=ax, errorbars=True)
@@ -39,7 +43,8 @@ Or create a corner plot for all the posterior parameters
 .. code-block:: python
 
    from gwb_analysis.gwb_analysis.analyze_model import Model_Info
-   model1 = Model_Info(path='path/to/file/', file='model_file.npz', model_name='Model1', color='steelblue', line_style='--', threshold=0.5).get_posteriors()
+   model1 = Model_Info(path='path/to/file/', file='model_file.npz', model_name='Model1',
+   color='steelblue', line_style='--', threshold=0.5).get_posteriors()
 
    model1.corner_plot()
 
@@ -50,13 +55,15 @@ Or a black hole mass function.
    import matplotlib.pyplot as plt
    import numpy as np
    from gwb_analysis.gwb_analysis.analyze_model import Model_Info
-   model1 = Model_Info(path='path/to/file/', file='model_file.npz', model_name='Model1', color='steelblue', line_style='--', threshold=0.5).get_posteriors()
+   model1 = Model_Info(path='path/to/file/', file='model_file.npz', model_name='Model1',
+   color='steelblue', line_style='--', threshold=0.5).get_posteriors()
 
    mbh_log10 = np.linspace(5, 13, 100)
    for z in (0, 1, 2):
 
        ndens = model1.bhmf(mbh_log10, redz=z)
-       plt.plot(mbh_log10, ndens, color=model1.color, ls=model1.line_style, label=model1.model_name)
+       plt.plot(mbh_log10, ndens, color=model1.color, ls=model1.line_style,
+       label=model1.model_name)
 
    plt.yscale('log')
    plt.xlim(7, 13)
