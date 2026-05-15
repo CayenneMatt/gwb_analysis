@@ -126,7 +126,7 @@ class Model_Info(object):
         self.model_name = model_name  # Model name
         self.color = color  # Color for all plotting associated with this model
         self.line_style = line_style  # Line style for all plotting associated with this model
-        self.threshold = threshold  # Likelihood value above which are ~1% of all models
+        self.threshold = threshold  # Offset from the maximum likelihood to use as a cutoff for plotting error bars on the spectrum
         self.evolving = evolving  # Whether the model has MMBulge evolution
         self.stdev = stdev  # Standard deviation of evolution parameter
         self.nfreq = nfreq  # Number of frequency bits to fit to. Default is 5
@@ -277,7 +277,7 @@ class Model_Info(object):
         
         Returns
         -------
-        None, the histogram is added to the given axis
+        self, the histogram is added to the given axis
         """
         skip = None
 
@@ -471,7 +471,7 @@ class Model_Info(object):
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
     
-    def add_spectrum(self, ax, errorbars=False, likelihood=False, label=None, **kwargs):
+    def add_spectrum(self, ax, errorbars=False, label=None, **kwargs):
         """
         Add the spectrum of the model to a given axis, with optional error bars and label.
 
@@ -479,12 +479,12 @@ class Model_Info(object):
         ----------
         ax : Matplotlib axis
             axis to which the spectrum will be added
-        lw : float, optional
-            Line width of the spectrum, default is 3
         errorbars : bool, optional
             Whether to add error bars to the spectrum, default is False
         label : str, optional
             Label for the spectrum, default is None, in which case the model name will be used
+        kwargs :
+            additional keyword arguments to be passed to the plot function, such as linewidth or alpha
 
         Returns
         -------
@@ -495,8 +495,6 @@ class Model_Info(object):
         vals = np.sum(self.ln_like[:, :self.nfreq], axis=-1)
         sim_idx = np.argmax(vals)
         
-        if likelihood:
-            print('Maximum likelihood value for model {}: {}'.format(self.model_name, np.exp(vals[sim_idx])))
         gwb = np.median(self.gwb, axis=2)
 
         ax.plot(np.log10(self.freqs), gwb[sim_idx], ls=self.line_style, c=self.color, label=label, **kwargs)
@@ -506,17 +504,16 @@ class Model_Info(object):
             dn = np.min(gwb[valid], axis=0)
             ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
 
-    def bhmf(self, mbh_log10, redz):
+    def bhmf(self, mbh_log10, redshift):
         r"""
         Produce the black hole mass function at a given redshift. This is calculated using holodeck by convolving a double Schechter GSMF with an Mbh–M_bulge relation
         :math:`M_\mathrm{BH} = \alpha_0 \left(\frac{M_{\mathrm{bulge}}}{10^{11}\, M_{\odot}}\right)^{\beta_0}`
 
-
         Parameters
         ----------
-        mass : array
+        mbh_log10 : array
             Black hole masses at which the BHMF is evaluated, in log10(Mbh/Msol)
-        redz : float
+        redshift : float
             Redshift at which the BHMF is evaluated
 
         Returns
@@ -539,17 +536,17 @@ class Model_Info(object):
                                                                 zplaw_scatter=self.params['mmb_zplaw_scatter'],
                                                                 scatter_dex = self.params['mmb_scatter_dex'])
         
-        return gsmf.mbh_mass_func_conv(10**mbh_log10 * MSOL, redz, mmbulge=mmb, scatter=True)
+        return gsmf.mbh_mass_func_conv(10**mbh_log10 * MSOL, redshift, mmbulge=mmb, scatter=True)
     
-    def bhmf_err(self, mbh_log10, redz, ndraws=100):
+    def bhmf_err(self, mbh_log10, redshift, ndraws=100):
         """
         Produces the black hole mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
 
         Parameters
         -----------
-        mass : array
+        mbh_log10 : array
             Black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)
-        redz : float
+        redshift : float
             Redshift at which the BHMF is evaluated
 
         Returns
@@ -560,9 +557,7 @@ class Model_Info(object):
             The 84th percentile of the black hole mass function at the given redshift
         bhmf_lower_bound : array
             The 16th percentile of the black hole mass function at the given redshift
-        """
-        # masses = np.linspace(mass[0], mass[1], mass[2])
-        
+        """        
         self.bhmf_dict = copy.deepcopy(self.space_class.DEFAULTS)
 
         # assert self.params != self.fiducial_values, "Posteriors have not been calculated yet. Run get_posteriors() before calculating error bars on the BHMF."
@@ -587,21 +582,21 @@ class Model_Info(object):
                                                             zplaw_scatter=self.bhmf_dict['mmb_zplaw_scatter'][j],
                                                             scatter_dex = self.bhmf_dict['mmb_scatter_dex'][j])
             
-            phis.append(gsmf.mbh_mass_func_conv(10**mbh_log10 * MSOL, redz, mmbulge=mmb, scatter=True))
+            phis.append(gsmf.mbh_mass_func_conv(10**mbh_log10 * MSOL, redshift, mmbulge=mmb, scatter=True))
 
         phi_50, phi_84, phi_16 = np.nanpercentile(phis, [50, 84, 16], axis = 0)
         
         return phi_50, phi_84, phi_16
     
-    def gsmf(self, mstar_log10, redz):
+    def gsmf(self, mstar_log10, redshift):
         """
         Produces the galaxy stellar mass function at a given redshift. Calculated using holodeck by connvolving a double Schechter GSMF with a MMBulge relation
 
         Parameters
         -----------
-        mass : array
+        mstar_log10 : array
             Black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)
-        redz : float
+        redshift : float
             Redshift at which the BHMF is evaluated
         
         Returns
@@ -618,8 +613,7 @@ class Model_Info(object):
         
         gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
             
-        
-        return gsmf(10**mstar_log10 * MSOL, redz)
+        return gsmf(10**mstar_log10 * MSOL, redshift)
     
 
     def get_shenf(self, redshift, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
@@ -711,8 +705,8 @@ class Model_Info(object):
         dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
 
         # Mass Function
-        bhmf1 = self.bhmf(mbh_log10, redz=z1)
-        bhmf2 = self.bhmf(mbh_log10, redz=z2)
+        bhmf1 = self.bhmf(mbh_log10, redshift=z1)
+        bhmf2 = self.bhmf(mbh_log10, redshift=z2)
         
         mdot = trapz((bhmf1 - bhmf2) * 10**mbh_log10, mbh_log10) * u.Msun / dt * f_obsc / f_acc#/ u.Mpc**3 * volume
 
@@ -736,7 +730,7 @@ class Model_Info(object):
     
     def fdfunc_zou(self, mbh_log10, redshift, fdmin=0.0):
         """
-        Fit to agn fraction as a function of stellar mass from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
+        Calculate AGN fraction as a function of stellar mass from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
         Here stellar mass is inferred from black hole mass
 
         Parameters
@@ -746,16 +740,15 @@ class Model_Info(object):
         redshift : float
             Redshift at which to evaluate the AGN fraction
         fdmin : float, optional
-            Minimum AGN fraction to return, default is 0.03, which is the value used in `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_
+            Minimum AGN fraction to return, default is 0.0, which is the value used in `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_
         
         Returns
         -------
         phi_fd : array-like
-            AGN fraction as a function of black hole mass at the given redshift
+            AGN fraction as a function of black hole mass and redshift
         """
         norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
         slope_fit = [ 0.01273298, -0.28087742, 1.5361624 ]  # [0.2927610944131739, -6.537700910036786, 35.65876956759064]
-
 
         mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**self.params['mmb_zplaw_amp']
         mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
@@ -774,6 +767,21 @@ class Model_Info(object):
         return phi_fd
     
     def fdfunc_quad(self, redshift, fdmin=0.0):
+        """
+        Calculate AGN fraction as a function of redshift using a quadratic fit to data from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
+
+        Parameters
+        ----------
+        redshift : float
+            Redshift at which to evaluate the AGN fraction
+        fdmin : float, optional
+            Minimum AGN fraction to return. Default is 0.0
+        
+        Returns
+        -------
+        fduty : float
+            AGN fraction as a function of redshift
+        """
         # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0806857142857146
         a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0406857142857146
         # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.00806857142857146
@@ -808,7 +816,7 @@ class Model_Info(object):
         Returns
         -------
         Nactive : array-like
-            The active fraction of black holes as a function of mass at the given redshift
+            The active fraction of black holes as a function of black hole mass
         """
 
         denom = (10**mbh_log10 / 10**mbh_star)**alpha + (10**mbh_log10 / 10**mbh_star)**beta
@@ -830,9 +838,15 @@ class Model_Info(object):
         Returns
         -------
         fduty : float
-            The AGN fraction at the given redshift according to the functional form assumed by Wu et al. (2026)
+            The active fraction of black holes as a function of redshift
         """
-        return 0.0004 * (1 + redshift)**3
+        fduty = 0.0004 * (1 + redshift)**3
+        try:
+            fduty[fduty > 1.0] = 1.0
+        except:
+            if fduty > 1.0:
+                fduty = 1.0
+        return fduty
 
 
     def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift):
@@ -853,7 +867,7 @@ class Model_Info(object):
         bhmf_conv : array-like
             The black hole mass function at the given redshift calculated from the GSMF and MMBulge relation
         """
-        ndens = self.gsmf(mstar_log10, redz=redshift)
+        ndens = self.gsmf(mstar_log10, redshift=redshift)
 
         scatter = np.log10(10**self.params['mmb_scatter_dex'] * (1.0 + redshift)**self.params['mmb_zplaw_scatter'])
 
@@ -893,7 +907,7 @@ class Model_Info(object):
         Returns
         -------
         bhar : array-like
-            Black hole accretion rate in Msun / year as a function of black hole mass and redshift
+            log10 black hole accretion rate in Msun / year as a function of black hole mass and redshift
         """
         if mth is None:
             import numpy as mth
@@ -929,7 +943,7 @@ class Model_Info(object):
         Returns
         -------
         bhar : array-like
-            Black hole accretion rate in Msun / year as a function of black hole mass and redshift
+            Black hole accretion rate in g / s as a function of black hole mass and redshift
         """
         if mth is None:
             import numpy as mth
@@ -975,7 +989,6 @@ class Model_Info(object):
         mth : module, optional
             Module to use for mathematical functions, default is numpy.
 
-        
         Returns
         -------
         etas : array-like
@@ -1018,7 +1031,7 @@ class Model_Info(object):
         k : float, optional
             Stepth of the logistic function. Default is -1.4
         m0 : float, optional
-            The value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 9.1
+            The value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 9.7
         mth : module, optional
             Module to use for mathematical functions, default is numpy.
 
@@ -1130,7 +1143,7 @@ class Model_Info(object):
             fduty = self.fdfunc_cube(redshift)
 
         if ndens is None:
-            ndens = self.bhmf(mbh_log10, redz=redshift)
+            ndens = self.bhmf(mbh_log10, redshift=redshift)
 
         dlogM = mbh_log10[1] - mbh_log10[0]
         lf_conv = mth.dot(K, ndens * fduty) * dlogM
@@ -1252,7 +1265,7 @@ class Model_Info(object):
             Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.
         loglam_func : str, optional
             Which functional form to use for calculating the mean log lambda as a function of black hole mass, options are 'Schechter' and 'Line'. Default is 'Schechter'
-        fdfunc : str, optional
+        fdfunc : str or int, optional
             Which functional form to use for calculating the AGN fraction as a function of black hole mass and redshift, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'
         lowlam : float
             Lower limit of allowable Eddington ratios
@@ -1294,7 +1307,7 @@ class Model_Info(object):
         dlogM = mbh_log10[1] - mbh_log10[0]
 
         if ndens is None:
-            ndens = self.bhmf(mbh_log10, redz=redshift)
+            ndens = self.bhmf(mbh_log10, redshift=redshift)
 
         lum_func = mth.dot(K, ndens * fduty) * dlogM
         return lum_func
@@ -1336,10 +1349,8 @@ class Model_Info(object):
 
     def Prob_Plaw(self, loglambdas, redshift, mth=None):
         """
-        Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_ equation 1, has scatter of 0.38 dex
-
-        .. warning::
-            Not normalized
+        Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
+        equation 1, has scatter of 0.38 dex
 
         Parameters
         ----------
@@ -1380,8 +1391,22 @@ class Model_Info(object):
 
         Parameters
         ----------
-       fdfunc : bool, optional
+        L_grid : array
+            Grid of luminosities at which the luminosity function is evaluated
+        phiL : array
+            Luminosity function evaluated at L_grid, in units of Mpc^-3 dex^-1
+        Mbh_grid : array
+            Grid of black hole masses at which to evaluate the black hole mass function
+        loglambda_grid : array
+            Grid of log Eddington ratios at which the probability density function is evaluated
+        redshift : float
+            Redshift at which to evaluate the black hole mass function
+        P_func : str, optional
+            Which functional form to use for calculating the probability density function of log lambda, options are 'Shen' and 'Plaw'. Default is 'Shen'.
+        fdfunc : str or int, optional
             Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'.
+        mth : module, optional
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
 
         Returns
         -------
@@ -1429,19 +1454,19 @@ class Model_Info(object):
 
         Parameters
         ---------
-        logL_grid : array
+        lum_log10 : array
             Grid of log luminosities at which the luminosity function is evaluated
         phiL : array
-            Luminosity function evaluated at logL_grid, in units of Mpc^-3 dex^-1
-        logMbh_grid : array
+            Luminosity function evaluated at lum_log10, in units of Mpc^-3 dex^-1
+        mbh_log10 : array
             Grid of log black hole masses at which to evaluate the black hole mass function
         sigma : float
             Scatter in log lambda at fixed black hole mass, assumed to be Gaussian
         redshift : float
             Redshift at which to evaluate the black hole mass function
-        lambda_func : bool, optional
+        lambda_func : str, optional
             Which functional form to use for calculating mean log lambda as a function of black hole mass, options are 'Shen' and 'Line'. Default is 'Shen'.
-        fdfunc : bool, optional
+        fdfunc : str or int, optional
             Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'.
         mth : module, optional
             Module to use for mathematical functions. Default is numpy.
@@ -1488,7 +1513,7 @@ class Model_Info(object):
         return phiM / fduty
     
 
-    def phiL_to_phiL_erdf_shan(self, lum_log10, mbh_log10, loglambda_grid, redshift, N0, alpha, beta, mbh_star, mth=None):
+    def PhiL_to_PhiL_erdf_Shan(self, lum_log10, mbh_log10, loglambda_grid, redshift, N0, alpha, beta, mbh_star, mth=None):
         """
         Implementation of equation A2 in `Shankar et al (2013) <https://ui.adsabs.harvard.edu/abs/2013MNRAS.428..421S/abstract>`_ to calculate the luminosity
         function from the number of active black holes convolved with an Eddington ratio distribution funciton.
