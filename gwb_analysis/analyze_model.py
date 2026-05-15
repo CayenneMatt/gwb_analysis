@@ -756,6 +756,7 @@ class Model_Info(object):
         norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
         slope_fit = [ 0.01273298, -0.28087742, 1.5361624 ]  # [0.2927610944131739, -6.537700910036786, 35.65876956759064]
 
+
         mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**self.params['mmb_zplaw_amp']
         mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
 
@@ -773,7 +774,9 @@ class Model_Info(object):
         return phi_fd
     
     def fdfunc_quad(self, redshift, fdmin=0.0):
-        a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0806857142857146
+        # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0806857142857146
+        a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0406857142857146
+        # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.00806857142857146
         fduty = a * redshift**2 + b * redshift + c
 
         try:
@@ -785,7 +788,7 @@ class Model_Info(object):
 
     def fdfunc_shan(self, mbh_log10, N0, alpha, beta, mbh_star):
         """
-        Equation A1 from `Shankar et al (2013) <https://ui.adsabs.harvard.edu/abs/2013MNRAS.428..421S/abstract>`_
+        Equation A1 from `Shankar et al. (2013) <https://ui.adsabs.harvard.edu/abs/2013MNRAS.428..421S/abstract>`_
         for calculating the active fraction of black holes as a function of mass, where the active fraction is defined as the
         fraction of black holes that are actively accreting at a given time.
 
@@ -813,6 +816,23 @@ class Model_Info(object):
         Nactive = N0 / denom
 
         return Nactive
+    
+    def fdfunc_cube(self, redshift):
+        """
+        Functional form assumed by `Wu et al. (2026) < https://ui.adsabs.harvard.edu/abs/2026arXiv260504776W/abstract>`_
+        fduty = 0.0004 * (1 + z)^3
+
+        Parameters
+        ----------
+        redshift : float
+            Redshift at which to evaluate the AGN fraction
+
+        Returns
+        -------
+        fduty : float
+            The AGN fraction at the given redshift according to the functional form assumed by Wu et al. (2026)
+        """
+        return 0.0004 * (1 + redshift)**3
 
 
     def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift):
@@ -1016,7 +1036,7 @@ class Model_Info(object):
         return l / (1 + mth.exp(k * (mbh_log10 - m0))) + min
     
 
-    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, ndens=None, scatter=None, eta_func = 'Davis', rad_eff=None, fd_func='Zou', mdot_func='Gal', mth=None):
+    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, ndens=None, scatter=None, eta_func = 'Davis', rad_eff=None, fdfunc='Zou', mdot_func='Gal', mth=None):
         """
         Calculate luminosity from black hole mass using the accretion rate and radiative efficiency.
         The accretion rate is calculated using the MMBulge relation and the GSMF, and the radiative efficiency is calculated using one of several functions of black hole mass.
@@ -1036,8 +1056,8 @@ class Model_Info(object):
             options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
         rad_eff : float, optional
             The constantvalue of the radiative efficiency to use when eta_func is 'Constant'. Default is None
-        fd_func : bool, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou' and 'Quad'. Default is 'Zou'.
+        fdfunc : bool, optional
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'.
         mdot_func : bool, optional
             Which functional form to use for calculating accretion rate, options are 'Gal', 'Bondi', and 'Lambda'. Default is 'Gal'.
         mth : module, optional
@@ -1100,11 +1120,14 @@ class Model_Info(object):
         inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
         K = inv_sqrt2pi/scatter * mth.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
 
-        if fd_func == 'Zou':
+        if fdfunc == 'Zou':
             fduty = self.fdfunc_zou(mbh_log10, redshift)
 
-        elif fd_func == 'Quad':
+        elif fdfunc == 'Quad':
             fduty = self.fdfunc_quad(redshift)
+
+        elif fdfunc == 'Cube':
+            fduty = self.fdfunc_cube(redshift)
 
         if ndens is None:
             ndens = self.bhmf(mbh_log10, redz=redshift)
@@ -1205,7 +1228,7 @@ class Model_Info(object):
         loglam_L = a * lum_log10 + b
         return loglam_L
 
-    def L_from_Mbh_via_lambda(self, mbh_log10, knee, norm, slope, sigma_loglam, redshift, logL_grid, ndens=None, loglam_func='Schechter', fd_func='Zou', lowlam=-15, hilam=11, mth=None):
+    def L_from_Mbh_via_lambda(self, mbh_log10, knee, norm, slope, sigma_loglam, redshift, logL_grid, ndens=None, loglam_func='Schechter', fdfunc='Zou', lowlam=-15, hilam=11, mth=None):
         """
         Calculate AGN luminosity function by convolving black hole mass function with an Eddington ratio distribution function
 
@@ -1229,8 +1252,8 @@ class Model_Info(object):
             Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.
         loglam_func : str, optional
             Which functional form to use for calculating the mean log lambda as a function of black hole mass, options are 'Schechter' and 'Line'. Default is 'Schechter'
-        fd_func : str, optional
-            Which functional form to use for calculating the AGN fraction as a function of black hole mass and redshift, options are 'Zou' and 'Quad'. Default is 'Zou'
+        fdfunc : str, optional
+            Which functional form to use for calculating the AGN fraction as a function of black hole mass and redshift, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'
         lowlam : float
             Lower limit of allowable Eddington ratios
         hilam : float
@@ -1249,17 +1272,20 @@ class Model_Info(object):
 
         logC = np.log10(C_edd)
 
-        if fd_func == 'Zou':
+        if fdfunc == 'Zou':
             fduty = self.fdfunc_zou(mbh_log10, redshift)
 
-        elif fd_func == 'Quad':
+        elif fdfunc == 'Quad':
             fduty = self.fdfunc_quad(redshift)
+        
+        elif fdfunc == 'Cube':
+            fduty = self.fdfunc_cube(redshift)
         
         if loglam_func == 'Schechter':
             loglam_M = self.loglamM_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth) # Schechter in mbh_log10
 
         elif loglam_func == 'Line':
-            loglam_M = self.loglamM_func_line(mbh_log10, mth=mth) # Linear in mbh_log10
+            loglam_M = self.loglamM_func_shen(mbh_log10, mth=mth) # Linear in mbh_log10
 
         mean_L_at_M = mbh_log10[None, :] + logC + loglam_M
         inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
@@ -1314,6 +1340,20 @@ class Model_Info(object):
 
         .. warning::
             Not normalized
+
+        Parameters
+        ----------
+        loglambdas : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function
+        redshift : float
+            Redshift at which to evaluate the probability density function
+        mth : module, optional
+            Module to use for mathematical functions. Default is numpy.
+        
+        Returns
+        -------
+        prob : array
+            The probability density function of log lambda at the given redshift, evaluated at the input log lambda values.
         """
         if mth is None:
             import numpy as mth
@@ -1334,14 +1374,14 @@ class Model_Info(object):
         return plam / np.trapz(plam, loglambdas)
                 
     
-    def phiL_to_phiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, P_func='Shen', fd_func='Zou', mth=None):
+    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, P_func='Shen', fdfunc='Zou', mth=None):
         """
         Compute black hole mass function from luminosity function using an Eddington ratio distribution function.
 
         Parameters
         ----------
-       fd_func : bool, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou' and 'Quad'. Default is 'Zou'.
+       fdfunc : bool, optional
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'.
 
         Returns
         -------
@@ -1361,11 +1401,17 @@ class Model_Info(object):
         elif P_func is 'Plaw':
             Ploglam = self.Prob_Plaw(loglambda_grid, redshift)
 
-        if fd_func == 'Zou':
+        if fdfunc == 'Zou':
             fduty = self.fdfunc_zou(mth.log10(Mbh_grid), redshift, fdmin=0.03)
 
-        elif fd_func == 'Quad':
+        elif fdfunc == 'Quad':
             fduty = self.fdfunc_quad(redshift)
+        
+        elif fdfunc == 'Cube':
+            fduty = self.fdfunc_cube(redshift)
+
+        elif type(fdfunc) == float:
+            fduty = fdfunc
 
         for i, M in enumerate(Mbh_grid):
             lam = L_grid / (C_edd * M)
@@ -1378,7 +1424,7 @@ class Model_Info(object):
 
         return Phi_M
 
-    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', a=0.469, b=-22.46, fd_func='Quad', mth=None):
+    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', a=0.469, b=-22.46, fdfunc='Zou', mth=None):
         """
 
         Parameters
@@ -1395,8 +1441,8 @@ class Model_Info(object):
             Redshift at which to evaluate the black hole mass function
         lambda_func : bool, optional
             Which functional form to use for calculating mean log lambda as a function of black hole mass, options are 'Shen' and 'Line'. Default is 'Shen'.
-        fd_func : bool, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou' and 'Quad'. Default is 'Zou'.
+        fdfunc : bool, optional
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'.
         mth : module, optional
             Module to use for mathematical functions. Default is numpy.
 
@@ -1427,11 +1473,18 @@ class Model_Info(object):
 
         phiM = mth.dot(phiL, K) * dlogL # result shape (nM,)  in Mpc^-3 dex^-1
 
-        if fd_func == 'Zou':
+        if fdfunc == 'Zou':
             fduty = self.fdfunc_zou(mbh_log10, redshift, fdmin=0.1)
 
-        elif fd_func == 'Quad':
+        elif fdfunc == 'Quad':
             fduty = self.fdfunc_quad(redshift)
+
+        elif fdfunc == 'Cube':
+            fduty = self.fdfunc_cube(redshift)
+
+        elif type(fdfunc) == float:
+            fduty = fdfunc
+
         return phiM / fduty
     
 
