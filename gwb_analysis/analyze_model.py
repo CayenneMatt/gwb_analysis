@@ -183,11 +183,15 @@ class Model_Info(object):
         self.params_err = copy.deepcopy(self.fiducial_values_err)
 
         # Dictionary of plot labels associated with each parameter
-        self.plt_labels = {'hard_time'           : r"$\tau_\mathrm{f}$",
+        self.plt_labels = {'hard_time'              : r"$\tau_\mathrm{f}$",
                             'hard_sepa_init'        : r"Bin. Sep.",
                             'hard_rchar'            : r'R$_{char}$',
                             'hard_gamma_inner'      : r"$\nu_{inner}$",
                             'hard_gamma_outer'      : r"$\nu_{outer}$",
+                            'hard_outer_time'       : r"$\tau_\mathrm{outer}$",
+                            'hard_nu_inner'         : r"$\nu_{outer}$",
+                            'hard_r_gw_crit_9'      : r'R$_{GW, crit}$',
+                            'hard_alpha_gw_crit'    : r"$\alpha_{GW, crit}$",
                             'gsmf_phi0_log10'       : r"$\log \phi_{*}$",
                             'gsmf_mchar0_log10'     : r"$\log M_{\mathrm{c}}$",
                             'gsmf_log10_phi_one_z0' : r"$\log \phi_{*, 1,0}$",
@@ -528,13 +532,18 @@ class Model_Info(object):
         alpha2 = self.params['gsmf_alpha_two']
         
         gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
-                    
-        mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.params['mmb_mamp_log10'],
-                                                                mplaw = self.params['mmb_plaw'],
-                                                                zplaw_amp=self.params['mmb_zplaw_amp'],
-                                                                zplaw_slope=self.params['mmb_zplaw_slope'],
-                                                                zplaw_scatter=self.params['mmb_zplaw_scatter'],
-                                                                scatter_dex = self.params['mmb_scatter_dex'])
+
+        try:
+            mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.params['mmb_mamp_log10'],
+                                                            mplaw = self.params['mmb_plaw'],
+                                                            zplaw_amp = self.params['mmb_zplaw_amp'],
+                                                            zplaw_slope = self.params['mmb_zplaw_slope'],
+                                                            zplaw_scatter = self.params['mmb_zplaw_scatter'],
+                                                            scatter_dex = self.params['mmb_scatter_dex'])
+        except:
+            mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.params['mmb_mamp_log10'],
+                                                            mplaw = self.params['mmb_plaw'],
+                                                            scatter_dex = self.params['mmb_scatter_dex'])
         
         return gsmf.mbh_mass_func_conv(10**mbh_log10 * MSOL, redshift, mmbulge=mmb, scatter=True)
     
@@ -575,11 +584,16 @@ class Model_Info(object):
 
             gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
             
-            mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.bhmf_dict['mmb_mamp_log10'][j],
+            try:
+                mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.bhmf_dict['mmb_mamp_log10'][j],
+                                                                mplaw = self.bhmf_dict['mmb_plaw'][j],
+                                                                zplaw_amp=self.bhmf_dict['mmb_zplaw_amp'][j],
+                                                                zplaw_slope=self.bhmf_dict['mmb_zplaw_slope'][j],
+                                                                zplaw_scatter=self.bhmf_dict['mmb_zplaw_scatter'][j],
+                                                                scatter_dex = self.bhmf_dict['mmb_scatter_dex'][j])
+            except:
+                mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.bhmf_dict['mmb_mamp_log10'][j],
                                                             mplaw = self.bhmf_dict['mmb_plaw'][j],
-                                                            zplaw_amp=self.bhmf_dict['mmb_zplaw_amp'][j],
-                                                            zplaw_slope=self.bhmf_dict['mmb_zplaw_slope'][j],
-                                                            zplaw_scatter=self.bhmf_dict['mmb_zplaw_scatter'][j],
                                                             scatter_dex = self.bhmf_dict['mmb_scatter_dex'][j])
             
             phis.append(gsmf.mbh_mass_func_conv(10**mbh_log10 * MSOL, redshift, mmbulge=mmb, scatter=True))
@@ -766,7 +780,7 @@ class Model_Info(object):
 
         return phi_fd
     
-    def fdfunc_quad(self, redshift, fdmin=0.0):
+    def fdfunc_quad(self, redshift, fdmin=0.0004):
         """
         Calculate AGN fraction as a function of redshift using a quadratic fit to data from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
 
