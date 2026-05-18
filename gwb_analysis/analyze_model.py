@@ -796,8 +796,8 @@ class Model_Info(object):
         fduty : float
             AGN fraction as a function of redshift
         """
-        # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0806857142857146
-        a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0406857142857146
+        a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0806857142857146
+        # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0406857142857146
         # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.00806857142857146
         fduty = a * redshift**2 + b * redshift + c
 
@@ -1449,7 +1449,8 @@ class Model_Info(object):
         elif fdfunc == 'Cube':
             fduty = self.fdfunc_cube(redshift)
 
-        elif type(fdfunc) == float:
+        # elif type(fdfunc) == float:
+        elif type(fdfunc) != str:
             fduty = fdfunc
 
         for i, M in enumerate(Mbh_grid):
@@ -1521,7 +1522,8 @@ class Model_Info(object):
         elif fdfunc == 'Cube':
             fduty = self.fdfunc_cube(redshift)
 
-        elif type(fdfunc) == float:
+        # elif type(fdfunc) == float:
+        elif type(fdfunc) != str:
             fduty = fdfunc
 
         return phiM / fduty
