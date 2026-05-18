@@ -780,7 +780,7 @@ class Model_Info(object):
 
         return phi_fd
     
-    def fdfunc_quad(self, redshift, fdmin=0.0004):
+    def fdfunc_quad(self, redshift, fdmin=0.0):
         """
         Calculate AGN fraction as a function of redshift using a quadratic fit to data from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
 
@@ -861,7 +861,35 @@ class Model_Info(object):
             if fduty > 1.0:
                 fduty = 1.0
         return fduty
+    
+    def fdfunc_interp(self, redshift, fdmin=0.0):
+        """
+        Interpolated AGN fraction calculated by taking the ratio of the mass density between the BHMF predicted by comparing extrapolated methods in Shen et al. 2020 to the fiducial BHMF predicted by holodeck at many redshifts.
+        
+        .. note::
+            This was calibrated using only BH masses > 10^8 Msun
+        
+        Parameters
+        ----------
+        redshift : float
+            Redshift at which to evaluate the AGN fraction
+        fdmin : float, optional
+            Minimum AGN fraction to return, default is 0.0  
 
+        Returns
+        -------
+        fduty : float
+            The active fraction of black holes as a function of redshift  
+        """
+        yvals = [0.01155760379692579, 0.024757591972556545, 0.0422131185738816, 0.06182450643481384, 0.08187823766345483, 0.10137354266892258, 0.11988088153114007, 0.13727233872774394, 0.15347464540720532, 0.16829037484606227, 0.18130133659343955, 0.18780050567575066, 0.19126556062586866, 0.19125173275475665, 0.18764478684847097, 0.1807696242254012, 0.17684420349963398, 0.17054284479086534, 0.16277088257305478, 0.15436150776267812, 0.14597480967203288, 0.1326862974740685, 0.12077011741805042, 0.11022740137039008, 0.10098672690611846, 0.09294512607316838, 0.08599544231733751, 0.08004474648745918, 0.07502851328716545]
+        xvals = [0.2, 0.4, 0.6, 0.8, 1. , 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3. , 3.2, 3.4, 3.6, 3.8, 4. , 4.2, 4.4, 4.6, 4.8, 5.0 , 5.2, 5.4, 5.6, 5.8]
+        fduty = np.interp(redshift, xvals, yvals)
+        try:
+            fduty[fduty < fdmin] = fdmin
+        except TypeError:
+            if fduty < fdmin:
+                fduty = fdmin
+        return fduty
 
     def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift):
         """
@@ -1399,7 +1427,7 @@ class Model_Info(object):
         return plam / np.trapz(plam, loglambdas)
                 
     
-    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, P_func='Shen', fdfunc='Zou', mth=None):
+    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, P_func='Shen', fdfunc='Interp', mth=None):
         """
         Compute black hole mass function from luminosity function using an Eddington ratio distribution function.
 
@@ -1418,7 +1446,7 @@ class Model_Info(object):
         P_func : str, optional
             Which functional form to use for calculating the probability density function of log lambda, options are 'Shen' and 'Plaw'. Default is 'Shen'.
         fdfunc : str or int, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'.
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
         mth : module, optional
             Module to use for mathematical functions. Default is None which sets mth = numpy.
 
@@ -1441,13 +1469,16 @@ class Model_Info(object):
             Ploglam = self.Prob_Plaw(loglambda_grid, redshift)
 
         if fdfunc == 'Zou':
-            fduty = self.fdfunc_zou(mth.log10(Mbh_grid), redshift, fdmin=0.03)
+            fduty = self.fdfunc_zou(mth.log10(Mbh_grid), redshift)
 
         elif fdfunc == 'Quad':
             fduty = self.fdfunc_quad(redshift)
         
         elif fdfunc == 'Cube':
             fduty = self.fdfunc_cube(redshift)
+
+        elif fdfunc == 'Interp':
+            fduty = self.fdfunc_interp(redshift)
 
         # elif type(fdfunc) == float:
         elif type(fdfunc) != str:
@@ -1464,7 +1495,7 @@ class Model_Info(object):
 
         return Phi_M
 
-    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', a=0.469, b=-22.46, fdfunc='Zou', mth=None):
+    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', a=0.469, b=-22.46, fdfunc='Interp', mth=None):
         """
 
         Parameters
@@ -1482,7 +1513,7 @@ class Model_Info(object):
         lambda_func : str, optional
             Which functional form to use for calculating mean log lambda as a function of black hole mass, options are 'Shen' and 'Line'. Default is 'Shen'.
         fdfunc : str or int, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'.
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
         mth : module, optional
             Module to use for mathematical functions. Default is numpy.
 
@@ -1514,13 +1545,16 @@ class Model_Info(object):
         phiM = mth.dot(phiL, K) * dlogL # result shape (nM,)  in Mpc^-3 dex^-1
 
         if fdfunc == 'Zou':
-            fduty = self.fdfunc_zou(mbh_log10, redshift, fdmin=0.1)
+            fduty = self.fdfunc_zou(mbh_log10, redshift)
 
         elif fdfunc == 'Quad':
             fduty = self.fdfunc_quad(redshift)
 
         elif fdfunc == 'Cube':
             fduty = self.fdfunc_cube(redshift)
+
+        elif fdfunc == 'Interp':
+            fduty = self.fdfunc_interp(redshift)
 
         # elif type(fdfunc) == float:
         elif type(fdfunc) != str:
