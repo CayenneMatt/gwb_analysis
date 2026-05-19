@@ -742,7 +742,7 @@ class Model_Info(object):
 
         return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
-    def fdfunc_zou(self, mbh_log10, redshift, fdmin=0.0):
+    def fdfunc_zou(self, mbh_log10, redshift, fdmin=0.00001):
         """
         Calculate AGN fraction as a function of stellar mass from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
         Here stellar mass is inferred from black hole mass
@@ -842,7 +842,7 @@ class Model_Info(object):
     def fdfunc_cube(self, redshift):
         """
         Functional form assumed by `Wu et al. (2026) < https://ui.adsabs.harvard.edu/abs/2026arXiv260504776W/abstract>`_
-        fduty = 0.0004 * (1 + z)^3
+        fduty = 0.0004 * (1 + z)^3, here this is then multiplied by 10 since their AGN fraction is weighted.
 
         Parameters
         ----------
@@ -854,7 +854,7 @@ class Model_Info(object):
         fduty : float
             The active fraction of black holes as a function of redshift
         """
-        fduty = 0.0004 * (1 + redshift)**3
+        fduty = 0.0004 * (1 + redshift)**3 * 10  # Multiply by 10 to approximate total AGN fraction
         try:
             fduty[fduty > 1.0] = 1.0
         except:
