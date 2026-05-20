@@ -742,7 +742,7 @@ class Model_Info(object):
 
         return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
-    def fdfunc_zou(self, mbh_log10, redshift, fdmin=0.00001):
+    def facfunc_zou(self, mbh_log10, redshift, facmin=0.00001):
         """
         Calculate AGN fraction as a function of stellar mass from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
         Here stellar mass is inferred from black hole mass
@@ -753,12 +753,12 @@ class Model_Info(object):
             Log10 of black hole mass in solar masses
         redshift : float
             Redshift at which to evaluate the AGN fraction
-        fdmin : float, optional
+        facmin : float, optional
             Minimum AGN fraction to return, default is 0.0, which is the value used in `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_
         
         Returns
         -------
-        phi_fd : array-like
+        phi_fa : array-like
             AGN fraction as a function of black hole mass and redshift
         """
         norm_fit = [-0.0348215, 0.77511731, -4.24506371]  # [-0.25916918189249905, 5.489176958654701, -31.25532992258093]
@@ -774,13 +774,13 @@ class Model_Info(object):
         slope = slope_fit[0]*mstar_log10**2 + slope_fit[1]*mstar_log10 + slope_fit[2]
         slope[slope > 0.0] = 0.0
 
-        phi_fd = norm * (redshift) + slope
+        phi_fa = norm * (redshift) + slope
 
-        phi_fd[phi_fd < fdmin] = fdmin
+        phi_fa[phi_fa < facmin] = facmin
 
-        return phi_fd
+        return phi_fa
     
-    def fdfunc_quad(self, redshift, fdmin=0.0):
+    def facfunc_quad(self, redshift, facmin=0.0):
         """
         Calculate AGN fraction as a function of redshift using a quadratic fit to data from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
 
@@ -788,27 +788,27 @@ class Model_Info(object):
         ----------
         redshift : float
             Redshift at which to evaluate the AGN fraction
-        fdmin : float, optional
+        facmin : float, optional
             Minimum AGN fraction to return. Default is 0.0
         
         Returns
         -------
-        fduty : float
+        factive : float
             AGN fraction as a function of redshift
         """
         a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0806857142857146
         # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0406857142857146
         # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.00806857142857146
-        fduty = a * redshift**2 + b * redshift + c
+        factive = a * redshift**2 + b * redshift + c
 
         try:
-            fduty[fduty < fdmin] = fdmin
+            factive[factive < facmin] = facmin
         except TypeError:
-            if fduty < fdmin:
-                fduty = fdmin
-        return fduty
+            if factive < facmin:
+                factive = facmin
+        return factive
 
-    def fdfunc_shan(self, mbh_log10, N0, alpha, beta, mbh_star):
+    def facfunc_shan(self, mbh_log10, N0, alpha, beta, mbh_star):
         """
         Equation A1 from `Shankar et al. (2013) <https://ui.adsabs.harvard.edu/abs/2013MNRAS.428..421S/abstract>`_
         for calculating the active fraction of black holes as a function of mass, where the active fraction is defined as the
@@ -839,10 +839,10 @@ class Model_Info(object):
 
         return Nactive
     
-    def fdfunc_cube(self, redshift):
+    def facfunc_cube(self, redshift):
         """
         Functional form assumed by `Wu et al. (2026) < https://ui.adsabs.harvard.edu/abs/2026arXiv260504776W/abstract>`_
-        fduty = 0.0004 * (1 + z)^3, here this is then multiplied by 10 since their AGN fraction is weighted.
+        factive = 0.0004 * (1 + z)^3, here this is then multiplied by 10 since their AGN fraction is weighted.
 
         Parameters
         ----------
@@ -851,18 +851,18 @@ class Model_Info(object):
 
         Returns
         -------
-        fduty : float
+        factive : float
             The active fraction of black holes as a function of redshift
         """
-        fduty = 0.0004 * (1 + redshift)**3 * 10  # Multiply by 10 to approximate total AGN fraction
+        factive = 0.0004 * (1 + redshift)**3 * 10  # Multiply by 10 to approximate total AGN fraction
         try:
-            fduty[fduty > 1.0] = 1.0
+            factive[factive > 1.0] = 1.0
         except:
-            if fduty > 1.0:
-                fduty = 1.0
-        return fduty
+            if factive > 1.0:
+                factive = 1.0
+        return factive
     
-    def fdfunc_interp(self, redshift, fdmin=0.0):
+    def facfunc_interp(self, redshift, facmin=0.0):
         """
         Interpolated AGN fraction calculated by taking the ratio of the mass density between the BHMF predicted by comparing extrapolated methods in Shen et al. 2020 to the fiducial BHMF predicted by holodeck at many redshifts.
         
@@ -873,23 +873,23 @@ class Model_Info(object):
         ----------
         redshift : float
             Redshift at which to evaluate the AGN fraction
-        fdmin : float, optional
+        facmin : float, optional
             Minimum AGN fraction to return, default is 0.0  
 
         Returns
         -------
-        fduty : float
+        factive : float
             The active fraction of black holes as a function of redshift  
         """
         yvals = [0.01155760379692579, 0.024757591972556545, 0.0422131185738816, 0.06182450643481384, 0.08187823766345483, 0.10137354266892258, 0.11988088153114007, 0.13727233872774394, 0.15347464540720532, 0.16829037484606227, 0.18130133659343955, 0.18780050567575066, 0.19126556062586866, 0.19125173275475665, 0.18764478684847097, 0.1807696242254012, 0.17684420349963398, 0.17054284479086534, 0.16277088257305478, 0.15436150776267812, 0.14597480967203288, 0.1326862974740685, 0.12077011741805042, 0.11022740137039008, 0.10098672690611846, 0.09294512607316838, 0.08599544231733751, 0.08004474648745918, 0.07502851328716545]
         xvals = [0.2, 0.4, 0.6, 0.8, 1. , 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3. , 3.2, 3.4, 3.6, 3.8, 4. , 4.2, 4.4, 4.6, 4.8, 5.0 , 5.2, 5.4, 5.6, 5.8]
-        fduty = np.interp(redshift, xvals, yvals)
+        factive = np.interp(redshift, xvals, yvals)
         try:
-            fduty[fduty < fdmin] = fdmin
+            factive[factive < facmin] = facmin
         except TypeError:
-            if fduty < fdmin:
-                fduty = fdmin
-        return fduty
+            if factive < facmin:
+                factive = facmin
+        return factive
 
     def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift):
         """
@@ -1091,7 +1091,7 @@ class Model_Info(object):
         return l / (1 + mth.exp(k * (mbh_log10 - m0))) + min
     
 
-    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, ndens=None, scatter=None, eta_func = 'Davis', rad_eff=None, fdfunc='Zou', mdot_func='Gal', mth=None):
+    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, ndens=None, scatter=None, eta_func = 'Davis', rad_eff=None, facfunc='Zou', mdot_func='Gal', mth=None):
         """
         Calculate luminosity from black hole mass using the accretion rate and radiative efficiency.
         The accretion rate is calculated using the MMBulge relation and the GSMF, and the radiative efficiency is calculated using one of several functions of black hole mass.
@@ -1111,7 +1111,7 @@ class Model_Info(object):
             options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
         rad_eff : float, optional
             The constantvalue of the radiative efficiency to use when eta_func is 'Constant'. Default is None
-        fdfunc : bool, optional
+        facfunc : bool, optional
             Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'.
         mdot_func : bool, optional
             Which functional form to use for calculating accretion rate, options are 'Gal', 'Bondi', and 'Lambda'. Default is 'Gal'.
@@ -1175,20 +1175,20 @@ class Model_Info(object):
         inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
         K = inv_sqrt2pi/scatter * mth.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
 
-        if fdfunc == 'Zou':
-            fduty = self.fdfunc_zou(mbh_log10, redshift)
+        if facfunc == 'Zou':
+            factive = self.facfunc_zou(mbh_log10, redshift)
 
-        elif fdfunc == 'Quad':
-            fduty = self.fdfunc_quad(redshift)
+        elif facfunc == 'Quad':
+            factive = self.facfunc_quad(redshift)
 
-        elif fdfunc == 'Cube':
-            fduty = self.fdfunc_cube(redshift)
+        elif facfunc == 'Cube':
+            factive = self.facfunc_cube(redshift)
 
         if ndens is None:
             ndens = self.bhmf(mbh_log10, redshift=redshift)
 
         dlogM = mbh_log10[1] - mbh_log10[0]
-        lf_conv = mth.dot(K, ndens * fduty) * dlogM
+        lf_conv = mth.dot(K, ndens * factive) * dlogM
 
         return lf_conv
 
@@ -1283,7 +1283,7 @@ class Model_Info(object):
         loglam_L = a * lum_log10 + b
         return loglam_L
 
-    def L_from_Mbh_via_lambda(self, mbh_log10, knee, norm, slope, sigma_loglam, redshift, logL_grid, ndens=None, loglam_func='Schechter', fdfunc='Zou', lowlam=-15, hilam=11, mth=None):
+    def L_from_Mbh_via_lambda(self, mbh_log10, knee, norm, slope, sigma_loglam, redshift, logL_grid, ndens=None, loglam_func='Schechter', facfunc='Zou', lowlam=-15, hilam=11, mth=None):
         """
         Calculate AGN luminosity function by convolving black hole mass function with an Eddington ratio distribution function
 
@@ -1307,7 +1307,7 @@ class Model_Info(object):
             Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.
         loglam_func : str, optional
             Which functional form to use for calculating the mean log lambda as a function of black hole mass, options are 'Schechter' and 'Line'. Default is 'Schechter'
-        fdfunc : str or int, optional
+        facfunc : str or int, optional
             Which functional form to use for calculating the AGN fraction as a function of black hole mass and redshift, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'
         lowlam : float
             Lower limit of allowable Eddington ratios
@@ -1327,14 +1327,14 @@ class Model_Info(object):
 
         logC = np.log10(C_edd)
 
-        if fdfunc == 'Zou':
-            fduty = self.fdfunc_zou(mbh_log10, redshift)
+        if facfunc == 'Zou':
+            factive = self.facfunc_zou(mbh_log10, redshift)
 
-        elif fdfunc == 'Quad':
-            fduty = self.fdfunc_quad(redshift)
+        elif facfunc == 'Quad':
+            factive = self.facfunc_quad(redshift)
         
-        elif fdfunc == 'Cube':
-            fduty = self.fdfunc_cube(redshift)
+        elif facfunc == 'Cube':
+            factive = self.facfunc_cube(redshift)
         
         if loglam_func == 'Schechter':
             loglam_M = self.loglamM_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth) # Schechter in mbh_log10
@@ -1351,7 +1351,7 @@ class Model_Info(object):
         if ndens is None:
             ndens = self.bhmf(mbh_log10, redshift=redshift)
 
-        lum_func = mth.dot(K, ndens * fduty) * dlogM
+        lum_func = mth.dot(K, ndens * factive) * dlogM
         return lum_func
     
     def Prob_Shen(self, loglambdas, z, alpha=-0.6, lam1=1.5, mth=None):
@@ -1427,7 +1427,7 @@ class Model_Info(object):
         return plam / np.trapz(plam, loglambdas)
                 
     
-    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, P_func='Shen', fdfunc='Interp', mth=None):
+    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, P_func='Shen', facfunc='Interp', mth=None):
         """
         Compute black hole mass function from luminosity function using an Eddington ratio distribution function.
 
@@ -1445,7 +1445,7 @@ class Model_Info(object):
             Redshift at which to evaluate the black hole mass function
         P_func : str, optional
             Which functional form to use for calculating the probability density function of log lambda, options are 'Shen' and 'Plaw'. Default is 'Shen'.
-        fdfunc : str or int, optional
+        facfunc : str or int, optional
             Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
         mth : module, optional
             Module to use for mathematical functions. Default is None which sets mth = numpy.
@@ -1468,21 +1468,21 @@ class Model_Info(object):
         elif P_func is 'Plaw':
             Ploglam = self.Prob_Plaw(loglambda_grid, redshift)
 
-        if fdfunc == 'Zou':
-            fduty = self.fdfunc_zou(mth.log10(Mbh_grid), redshift)
+        if facfunc == 'Zou':
+            factive = self.facfunc_zou(mth.log10(Mbh_grid), redshift)
 
-        elif fdfunc == 'Quad':
-            fduty = self.fdfunc_quad(redshift)
+        elif facfunc == 'Quad':
+            factive = self.facfunc_quad(redshift)
         
-        elif fdfunc == 'Cube':
-            fduty = self.fdfunc_cube(redshift)
+        elif facfunc == 'Cube':
+            factive = self.facfunc_cube(redshift)
 
-        elif fdfunc == 'Interp':
-            fduty = self.fdfunc_interp(redshift)
+        elif facfunc == 'Interp':
+            factive = self.facfunc_interp(redshift)
 
-        # elif type(fdfunc) == float:
-        elif type(fdfunc) != str:
-            fduty = fdfunc
+        # elif type(facfunc) == float:
+        elif type(facfunc) != str:
+            factive = facfunc
 
         for i, M in enumerate(Mbh_grid):
             lam = L_grid / (C_edd * M)
@@ -1491,11 +1491,11 @@ class Model_Info(object):
             P_interp = np.interp(loglam, loglambda_grid, Ploglam,
                                 left=0.0, right=0.0)
 
-            Phi_M[i] = mth.sum(P_interp * phiL * dlogL / fduty / mth.log(10))
+            Phi_M[i] = mth.sum(P_interp * phiL * dlogL / factive / mth.log(10))
 
         return Phi_M
 
-    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', a=0.469, b=-22.46, fdfunc='Interp', mth=None):
+    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', a=0.469, b=-22.46, facfunc='Interp', mth=None):
         """
 
         Parameters
@@ -1512,7 +1512,7 @@ class Model_Info(object):
             Redshift at which to evaluate the black hole mass function
         lambda_func : str, optional
             Which functional form to use for calculating mean log lambda as a function of black hole mass, options are 'Shen' and 'Line'. Default is 'Shen'.
-        fdfunc : str or int, optional
+        facfunc : str or int, optional
             Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
         mth : module, optional
             Module to use for mathematical functions. Default is numpy.
@@ -1544,23 +1544,23 @@ class Model_Info(object):
 
         phiM = mth.dot(phiL, K) * dlogL # result shape (nM,)  in Mpc^-3 dex^-1
 
-        if fdfunc == 'Zou':
-            fduty = self.fdfunc_zou(mbh_log10, redshift)
+        if facfunc == 'Zou':
+            factive = self.facfunc_zou(mbh_log10, redshift)
 
-        elif fdfunc == 'Quad':
-            fduty = self.fdfunc_quad(redshift)
+        elif facfunc == 'Quad':
+            factive = self.facfunc_quad(redshift)
 
-        elif fdfunc == 'Cube':
-            fduty = self.fdfunc_cube(redshift)
+        elif facfunc == 'Cube':
+            factive = self.facfunc_cube(redshift)
 
-        elif fdfunc == 'Interp':
-            fduty = self.fdfunc_interp(redshift)
+        elif facfunc == 'Interp':
+            factive = self.facfunc_interp(redshift)
 
-        # elif type(fdfunc) == float:
-        elif type(fdfunc) != str:
-            fduty = fdfunc
+        # elif type(facfunc) == float:
+        elif type(facfunc) != str:
+            factive = facfunc
 
-        return phiM / fduty
+        return phiM / factive
     
 
     def PhiL_to_PhiL_erdf_Shan(self, lum_log10, mbh_log10, loglambda_grid, redshift, N0, alpha, beta, mbh_star, mth=None):
@@ -1603,7 +1603,7 @@ class Model_Info(object):
 
         Ploglam = self.Prob_Shen(loglambda_grid, redshift)
 
-        Nactive = self.fdfunc_shan(mbh_log10, N0=N0, alpha=alpha, beta=beta, mbh_star=mbh_star)
+        Nactive = self.facfunc_shan(mbh_log10, N0=N0, alpha=alpha, beta=beta, mbh_star=mbh_star)
 
         try:
             for i, L in enumerate(lum_log10):
