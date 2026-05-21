@@ -793,20 +793,20 @@ class Model_Info(object):
         
         Returns
         -------
-        factive : float
+        Factive : float
             AGN fraction as a function of redshift
         """
         a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0806857142857146
         # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0406857142857146
         # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.00806857142857146
-        factive = a * redshift**2 + b * redshift + c
+        Factive = a * redshift**2 + b * redshift + c
 
         try:
-            factive[factive < facmin] = facmin
+            Factive[Factive < facmin] = facmin
         except TypeError:
-            if factive < facmin:
-                factive = facmin
-        return factive
+            if Factive < facmin:
+                Factive = facmin
+        return Factive
 
     def facfunc_shan(self, mbh_log10, N0, alpha, beta, mbh_star):
         """
@@ -842,7 +842,7 @@ class Model_Info(object):
     def facfunc_cube(self, redshift):
         """
         Functional form assumed by `Wu et al. (2026) < https://ui.adsabs.harvard.edu/abs/2026arXiv260504776W/abstract>`_
-        factive = 0.0004 * (1 + z)^3, here this is then multiplied by 10 since their AGN fraction is weighted.
+        Factive = 0.0004 * (1 + z)^3, here this is then multiplied by 10 since their AGN fraction is weighted.
 
         Parameters
         ----------
@@ -851,16 +851,16 @@ class Model_Info(object):
 
         Returns
         -------
-        factive : float
+        Factive : float
             The active fraction of black holes as a function of redshift
         """
-        factive = 0.0004 * (1 + redshift)**3 * 10  # Multiply by 10 to approximate total AGN fraction
+        Factive = 0.0004 * (1 + redshift)**3 * 10  # Multiply by 10 to approximate total AGN fraction
         try:
-            factive[factive > 1.0] = 1.0
+            Factive[Factive > 1.0] = 1.0
         except:
-            if factive > 1.0:
-                factive = 1.0
-        return factive
+            if Factive > 1.0:
+                Factive = 1.0
+        return Factive
     
     def facfunc_interp(self, redshift, facmin=0.0):
         """
@@ -878,18 +878,18 @@ class Model_Info(object):
 
         Returns
         -------
-        factive : float
+        Factive : float
             The active fraction of black holes as a function of redshift  
         """
         yvals = [0.01155760379692579, 0.024757591972556545, 0.0422131185738816, 0.06182450643481384, 0.08187823766345483, 0.10137354266892258, 0.11988088153114007, 0.13727233872774394, 0.15347464540720532, 0.16829037484606227, 0.18130133659343955, 0.18780050567575066, 0.19126556062586866, 0.19125173275475665, 0.18764478684847097, 0.1807696242254012, 0.17684420349963398, 0.17054284479086534, 0.16277088257305478, 0.15436150776267812, 0.14597480967203288, 0.1326862974740685, 0.12077011741805042, 0.11022740137039008, 0.10098672690611846, 0.09294512607316838, 0.08599544231733751, 0.08004474648745918, 0.07502851328716545]
         xvals = [0.2, 0.4, 0.6, 0.8, 1. , 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3. , 3.2, 3.4, 3.6, 3.8, 4. , 4.2, 4.4, 4.6, 4.8, 5.0 , 5.2, 5.4, 5.6, 5.8]
-        factive = np.interp(redshift, xvals, yvals)
+        Factive = np.interp(redshift, xvals, yvals)
         try:
-            factive[factive < facmin] = facmin
+            Factive[Factive < facmin] = facmin
         except TypeError:
-            if factive < facmin:
-                factive = facmin
-        return factive
+            if Factive < facmin:
+                Factive = facmin
+        return Factive
 
     def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift):
         """
@@ -1176,19 +1176,19 @@ class Model_Info(object):
         K = inv_sqrt2pi/scatter * mth.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
 
         if facfunc == 'Zou':
-            factive = self.facfunc_zou(mbh_log10, redshift)
+            Factive = self.facfunc_zou(mbh_log10, redshift)
 
         elif facfunc == 'Quad':
-            factive = self.facfunc_quad(redshift)
+            Factive = self.facfunc_quad(redshift)
 
         elif facfunc == 'Cube':
-            factive = self.facfunc_cube(redshift)
+            Factive = self.facfunc_cube(redshift)
 
         if ndens is None:
             ndens = self.bhmf(mbh_log10, redshift=redshift)
 
         dlogM = mbh_log10[1] - mbh_log10[0]
-        lf_conv = mth.dot(K, ndens * factive) * dlogM
+        lf_conv = mth.dot(K, ndens * Factive) * dlogM
 
         return lf_conv
 
@@ -1328,13 +1328,13 @@ class Model_Info(object):
         logC = np.log10(C_edd)
 
         if facfunc == 'Zou':
-            factive = self.facfunc_zou(mbh_log10, redshift)
+            Factive = self.facfunc_zou(mbh_log10, redshift)
 
         elif facfunc == 'Quad':
-            factive = self.facfunc_quad(redshift)
+            Factive = self.facfunc_quad(redshift)
         
         elif facfunc == 'Cube':
-            factive = self.facfunc_cube(redshift)
+            Factive = self.facfunc_cube(redshift)
         
         if loglam_func == 'Schechter':
             loglam_M = self.loglamM_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth) # Schechter in mbh_log10
@@ -1351,10 +1351,10 @@ class Model_Info(object):
         if ndens is None:
             ndens = self.bhmf(mbh_log10, redshift=redshift)
 
-        lum_func = mth.dot(K, ndens * factive) * dlogM
+        lum_func = mth.dot(K, ndens * Factive) * dlogM
         return lum_func
     
-    def Prob_Shen(self, loglambdas, z, alpha=-0.6, lam1=1.5, mth=None):
+    def Prob_loglam_Shen(self, loglambdas, z, alpha=-0.6, lam1=1.5, mth=None):
         """
         Eddington ratio distribution function from `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ equation 30.
 
@@ -1389,7 +1389,7 @@ class Model_Info(object):
         return (1 - F) * A * (10**loglambdas)**(1 + alpha) * mth.exp(-10**loglambdas / lam1) + F /\
         mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambdas - loglam2)**2 / (2 * sig**2)))
 
-    def Prob_Plaw(self, loglambdas, redshift, mth=None):
+    def Prob_loglam_Aird(self, loglambdas, redshift, mth=None):
         """
         Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
         equation 1, has scatter of 0.38 dex
@@ -1425,9 +1425,44 @@ class Model_Info(object):
 
         plam = mth.where(loglambdas < lambda_break, plow, phi)
         return plam / np.trapz(plam, loglambdas)
-                
     
-    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, P_func='Shen', facfunc='Interp', mth=None):
+    def Prob_loglam_Cao(self, loglam, beta_l=0.3, lam_peak=2.5, lam_min=1e-4, mth=None):
+        """
+        Returns normalized zeta(lambda) = dN / dloglambda based on the functional form used in `Cao (2023) <https://ui.adsabs.harvard.edu/abs/2010ApJ...725..388C/abstract>`_.
+
+        Parameters
+        ----------
+        loglam : array
+            log10(lambda)
+
+        beta_l : float
+            Power-law slope
+
+        lam_peak : float
+            Exponential cutoff scale
+
+        lam_min : float
+            Minimum Eddington ratio
+
+        Returns
+        -------
+        zeta : array
+            Normalized probability density in dlog10(lambda)
+        """
+
+        if mth is None:
+            import numpy as mth
+
+        lam = 10**loglam
+
+        zeta = (lam / lam_peak)**(-beta_l) * mth.exp(-lam / lam_peak)
+
+        zeta[lam < lam_min] = 0.0
+
+        return zeta / mth.trapz(zeta, x=loglam)
+                    
+    
+    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, Pfunc='Shen', facfunc='Interp', mth=None):
         """
         Compute black hole mass function from luminosity function using an Eddington ratio distribution function.
 
@@ -1443,8 +1478,8 @@ class Model_Info(object):
             Grid of log Eddington ratios at which the probability density function is evaluated
         redshift : float
             Redshift at which to evaluate the black hole mass function
-        P_func : str, optional
-            Which functional form to use for calculating the probability density function of log lambda, options are 'Shen' and 'Plaw'. Default is 'Shen'.
+        Pfunc : str, optional
+            Which functional form to use for calculating the probability density function of log lambda, options are 'Shen', 'Aird', and 'Cao'. Default is 'Shen'.
         facfunc : str or int, optional
             Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
         mth : module, optional
@@ -1462,27 +1497,29 @@ class Model_Info(object):
 
         Phi_M = mth.zeros_like(Mbh_grid)
 
-        if P_func is 'Shen':
-            Ploglam = self.Prob_Shen(loglambda_grid, redshift)
+        if Pfunc == 'Shen':
+            Ploglam = self.Prob_loglam_Shen(loglambda_grid, redshift)
  
-        elif P_func is 'Plaw':
-            Ploglam = self.Prob_Plaw(loglambda_grid, redshift)
+        elif Pfunc == 'Aird':
+            Ploglam = self.Prob_loglam_Aird(loglambda_grid, redshift)
+        
+        elif Pfunc == 'Cao':
+            Ploglam = self.Prob_loglam_Cao(loglambda_grid, redshift)
 
         if facfunc == 'Zou':
-            factive = self.facfunc_zou(mth.log10(Mbh_grid), redshift)
+            Factive = self.facfunc_zou(mth.log10(Mbh_grid), redshift)
 
         elif facfunc == 'Quad':
-            factive = self.facfunc_quad(redshift)
+            Factive = self.facfunc_quad(redshift)
         
         elif facfunc == 'Cube':
-            factive = self.facfunc_cube(redshift)
+            Factive = self.facfunc_cube(redshift)
 
         elif facfunc == 'Interp':
-            factive = self.facfunc_interp(redshift)
+            Factive = self.facfunc_interp(redshift)
 
-        # elif type(facfunc) == float:
         elif type(facfunc) != str:
-            factive = facfunc
+            Factive = facfunc
 
         for i, M in enumerate(Mbh_grid):
             lam = L_grid / (C_edd * M)
@@ -1491,7 +1528,7 @@ class Model_Info(object):
             P_interp = np.interp(loglam, loglambda_grid, Ploglam,
                                 left=0.0, right=0.0)
 
-            Phi_M[i] = mth.sum(P_interp * phiL * dlogL / factive / mth.log(10))
+            Phi_M[i] = mth.sum(P_interp * phiL * dlogL / Factive / mth.log(10))
 
         return Phi_M
 
@@ -1545,25 +1582,23 @@ class Model_Info(object):
         phiM = mth.dot(phiL, K) * dlogL # result shape (nM,)  in Mpc^-3 dex^-1
 
         if facfunc == 'Zou':
-            factive = self.facfunc_zou(mbh_log10, redshift)
+            Factive = self.facfunc_zou(mbh_log10, redshift)
 
         elif facfunc == 'Quad':
-            factive = self.facfunc_quad(redshift)
+            Factive = self.facfunc_quad(redshift)
 
         elif facfunc == 'Cube':
-            factive = self.facfunc_cube(redshift)
+            Factive = self.facfunc_cube(redshift)
 
         elif facfunc == 'Interp':
-            factive = self.facfunc_interp(redshift)
+            Factive = self.facfunc_interp(redshift)
 
-        # elif type(facfunc) == float:
         elif type(facfunc) != str:
-            factive = facfunc
+            Factive = facfunc
 
-        return phiM / factive
+        return phiM / Factive
     
-
-    def PhiL_to_PhiL_erdf_Shan(self, lum_log10, mbh_log10, loglambda_grid, redshift, N0, alpha, beta, mbh_star, mth=None):
+    def PhiM_to_PhiL_erdf_Shan(self, lum_log10, mbh_log10, loglambda_grid, redshift, N0, alpha, beta, mbh_star, mth=None):
         """
         Implementation of equation A2 in `Shankar et al (2013) <https://ui.adsabs.harvard.edu/abs/2013MNRAS.428..421S/abstract>`_ to calculate the luminosity
         function from the number of active black holes convolved with an Eddington ratio distribution funciton.
@@ -1601,21 +1636,115 @@ class Model_Info(object):
 
         phi_L = mth.zeros_like(lum_log10)
 
-        Ploglam = self.Prob_Shen(loglambda_grid, redshift)
+        Ploglam = self.Prob_loglam_Shen(loglambda_grid, redshift)
 
-        Nactive = self.facfunc_shan(mbh_log10, N0=N0, alpha=alpha, beta=beta, mbh_star=mbh_star)
+        Factive = self.facfunc_shan(mbh_log10, N0=N0, alpha=alpha, beta=beta, mbh_star=mbh_star)
 
         try:
             for i, L in enumerate(lum_log10):
                 loglam =  L - mbh_log10 - mth.log10(C_edd)
                 P_interp = mth.interp(loglam, loglambda_grid, Ploglam, left=0.0, right=0.0)
 
-                phi_L[i] = mth.sum(P_interp * Nactive * dlogM / mth.log(10))
+                phi_L[i] = mth.sum(P_interp * Factive * dlogM / mth.log(10))
         except:
             for i, L in enumerate(lum_log10):
                 loglam =  L - mbh_log10 - mth.log10(C_edd)
                 P_interp = mth.interp(loglam, loglambda_grid, Ploglam, left=0.0, right=0.0)
 
-                phi_L = mth.set_subtensor(phi_L[i], mth.sum(P_interp * Nactive * dlogM / mth.log(10)))
+                phi_L = mth.set_subtensor(phi_L[i], mth.sum(P_interp * Factive * dlogM / mth.log(10)))
 
         return phi_L
+    
+    def PhiM_to_PhiL_erdf(self, mbh_log10, phiM, redshift, logL_grid, loglambda_grid, Pfunc='Shen', facfunc='Interp', mth=None):
+        """
+        Convert a BH mass function into an AGN luminosity function.
+
+        Parameters
+        ----------
+        mbh_log10 : array
+            log10(M_BH / Msun)
+
+        phiM : array
+            Phi_BH(logM)
+            Units:
+                Mpc^-3 dex^-1
+
+        logL_grid : array or None
+            log10(Lbol / erg s^-1)
+            If None, autogenerated.
+
+        loglam_grid : array or None
+            log10(Eddington ratio grid)
+            If None, autogenerated.
+
+        beta_l, lam_peak, lam_min :
+            Parameters of Eddington ratio distribution.
+
+        Returns
+        -------
+        logL_grid : array
+        agnlf : array
+            Phi(Lbol)
+            Units:
+                Mpc^-3 dex^-1
+        """
+
+        if mth is None:
+            import numpy as mth
+
+        # --------------------------------------------------------
+        # lambda grid
+        # --------------------------------------------------------
+
+        lam = 10**loglambda_grid
+
+        if Pfunc == 'Shen':
+            Ploglam = self.Prob_loglam_Shen(loglambda_grid, redshift)
+ 
+        elif Pfunc == 'Aird':
+            Ploglam = self.Prob_loglam_Aird(loglambda_grid, redshift)
+        
+        elif Pfunc == 'Cao':
+            Ploglam = self.Prob_loglam_Cao(loglambda_grid, redshift)
+
+        if facfunc == 'Zou':
+            Factive = self.facfunc_zou(mbh_log10, redshift)
+
+        elif facfunc == 'Quad':
+            Factive = self.facfunc_quad(redshift)
+        
+        elif facfunc == 'Cube':
+            Factive = self.facfunc_cube(redshift)
+
+        elif facfunc == 'Interp':
+            Factive = self.facfunc_interp(redshift)
+        
+        elif type(facfunc) != str:
+            Factive = facfunc
+        # --------------------------------------------------------
+        # luminosity grid
+        # --------------------------------------------------------
+
+        if logL_grid is None:
+
+            logL_min = mth.min(mbh_log10) + mth.min(loglambda_grid) + mth.log10(C_edd)
+            logL_max = mth.max(mbh_log10) + mth.max(loglambda_grid) + mth.log10(C_edd)
+
+            logL_grid = mth.linspace(logL_min, logL_max, 300)
+
+        phiL = mth.zeros_like(logL_grid)
+
+        for i, logL in enumerate(logL_grid):
+
+            logM_edd = (logL - loglambda_grid - mth.log10(C_edd))
+
+            # interpolate BHMF onto required masses
+            phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, left=0.0, right=0.0)
+
+            if facfunc == 'Zou':
+                Factive = mth.interp(logM_edd, mbh_log10, Factive, left=0.0, right=0.0)
+
+            # integral over dloglambda
+            phiL[i] = mth.trapz(phiM_interp * Ploglam * Factive, x=loglambda_grid)
+
+        return logL_grid, phiL
