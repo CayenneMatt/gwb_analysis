@@ -185,13 +185,15 @@ class Model_Info(object):
         # Dictionary of plot labels associated with each parameter
         self.plt_labels = {'hard_time'              : r"$\tau_\mathrm{f}$",
                             'hard_sepa_init'        : r"Bin. Sep.",
-                            'hard_rchar'            : r'R$_{char}$',
-                            'hard_gamma_inner'      : r"$\nu_{inner}$",
-                            'hard_gamma_outer'      : r"$\nu_{outer}$",
+                            'hard_rchar'            : r'R$_\mathrm{char}$',
+                            'hard_rchar_9'            : r'R$_\mathrm{char}$',
+                            'hard_gamma_inner'      : r"$\nu_\mathrm{inner}$",
+                            'hard_gamma_outer'      : r"$\nu_\mathrm{outer}$",
                             'hard_outer_time'       : r"$\tau_\mathrm{outer}$",
-                            'hard_nu_inner'         : r"$\nu_{outer}$",
-                            'hard_r_gw_crit_9'      : r'R$_{GW, crit}$',
-                            'hard_alpha_gw_crit'    : r"$\alpha_{GW, crit}$",
+                            'hard_nu_inner'         : r"$\nu_\mathrm{inner}$",
+                            'hard_r_gw_crit_9'      : r'R$_\mathrm{GW, crit}$',
+                            'hard_alpha_gw_crit'    : r"$\alpha_\mathrm{GW, crit}$",
+                            'hard_beta_gw_crit'    : r"$\beta_\mathrm{GW, crit}$",
                             'gsmf_phi0_log10'       : r"$\log \phi_{*}$",
                             'gsmf_mchar0_log10'     : r"$\log M_{\mathrm{c}}$",
                             'gsmf_log10_phi_one_z0' : r"$\log \phi_{*, 1,0}$",
@@ -672,7 +674,7 @@ class Model_Info(object):
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
 
-    def calculate_radiative_efficiency(self, zval, mbh_log10, step=1e-3, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
+    def calculate_radiative_efficiency(self, redshift, mbh_log10, step=1e-3, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
         """
         Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the
         luminosity function at the average redshift. This is a rough calculation that assumes that the change in the BHMF and LF between the two redshifts is solely due to accretion
@@ -682,7 +684,7 @@ class Model_Info(object):
 
         Parameters
         -----------
-        zval : float
+        redshift : float
             The redshift at which to calculate the radiative efficiency
         mbh_log10 : array-like
             The log10 of the black hole masses at which to evaluate the BHMF.
@@ -713,8 +715,8 @@ class Model_Info(object):
         # Get BHMF at each redshift
         # volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
 
-        z1 = zval
-        z2 = zval + step
+        z1 = redshift
+        z2 = redshift + step
 
         dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
 
@@ -725,11 +727,11 @@ class Model_Info(object):
         mdot = trapz((bhmf1 - bhmf2) * 10**mbh_log10, mbh_log10) * u.Msun / dt * f_obsc / f_acc#/ u.Mpc**3 * volume
 
         if mdot < 0:
-            print('Warning: Negative mass accreted between z = {} and z = {} for model {}.'.format(np.round(z1, 2), np.round(z2, 2), self.model_name))
+            print('Warning: Negative mass accreted between z1 = {} and z2 = {} for model {}.'.format(np.round(z1, 2), np.round(z2, 2), self.model_name))
 
         # Luminosity Function
 
-        shen_fit = self.get_shenf(zval, path_to_shen_fits)
+        shen_fit = self.get_shenf(redshift, path_to_shen_fits)
         phiL = 10**(shen_fit[1])
         logL = shen_fit[0]
 
@@ -1354,15 +1356,15 @@ class Model_Info(object):
         lum_func = mth.dot(K, ndens * Factive) * dlogM
         return lum_func
     
-    def Prob_loglam_Shen(self, loglambdas, z, alpha=-0.6, lam1=1.5, mth=None):
+    def Prob_loglam_Shen(self, loglambda_grid, redshift, alpha=-0.6, lam1=1.5, mth=None):
         """
         Eddington ratio distribution function from `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ equation 30.
 
         Parameters
         ----------
-        loglambdas : array
+        loglambda_grid : array
             Log10 of the Eddington ratio at which to evaluate the probability density function
-        z : float
+        redshift : float
             Redshift at which to evaluate the probability density function
         alpha : float, optional
             The slope of the power law component of the distribution function. Default is -0.6.
@@ -1378,28 +1380,48 @@ class Model_Info(object):
         """
         if mth is None:
             import numpy as mth
-        loglam2 = mth.max([-1.9 + 0.45 * z, mth.log10(0.03)])
-        sig = mth.max([1.03 - 0.15 * z, 0.6]) / mth.log(10)
-        # F = 0.38
+        loglam2 = mth.max([-1.9 + 0.45 * redshift, mth.log10(0.03)])
+        sig = mth.max([1.03 - 0.15 * redshift, 0.6]) / mth.log(10)
+        # F = 0.38  # Type-1 only, Compton thin fraction
         F = 0.99
-        dPt1 = lambda lam: (1 - F) * (10**(lam))**(1 + alpha) * mth.exp(-10**(lam) / lam1)
-        Pt1 = inte.quad(dPt1, -3, 0)[0]
+        # try:
+        #     dPt1 = lambda lam: (1 - F) * (10**(lam))**(1 + alpha) * mth.exp(-10**(lam) / lam1)
+        #     Pt1 = inte.quad(dPt1, mth.min(loglambda_grid), mth.max(loglambda_grid))[0]
+        # except TypeError:
+        dlam = loglambda_grid[1] - loglambda_grid[0]
+        dPt1 = (1 - F) * mth.power(10.0, loglambda_grid)**(1 + alpha) * mth.exp(-mth.power(10.0, loglambda_grid) / lam1)
+        Pt1 = mth.sum(dPt1) * dlam
+
         A = (1 - F) / Pt1 
         
-        return (1 - F) * A * (10**loglambdas)**(1 + alpha) * mth.exp(-10**loglambdas / lam1) + F /\
-        mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambdas - loglam2)**2 / (2 * sig**2)))
+        return (1 - F) * A * (10**loglambda_grid)**(1 + alpha) * mth.exp(-10**loglambda_grid / lam1) + F /\
+        mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid - loglam2)**2 / (2 * sig**2)))
 
-    def Prob_loglam_Aird(self, loglambdas, redshift, mth=None):
+    def Prob_loglam_Aird(self, loglambda_grid, redshift, gamma1=-0.65, gamma2=-2.1, lambda_break=0.0, A=-3.15, beta=3.5, z0=0.5, mth=None):
         """
         Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
-        equation 1, has scatter of 0.38 dex
+        equation 1, has overal scatter of 0.38 dex. Individual reported uncertainties on input parameters are indicated below.
+
+        :math:`p\left(\lambda \mid \mathcal{M}_*, z\right) d \log \lambda=A \lambda^\gamma\left(\frac{1+z}{1+z_0}\right)^\beta d \log \lambda`
 
         Parameters
         ----------
-        loglambdas : array
+        loglambda_grid : array
             Log10 of the Eddington ratio at which to evaluate the probability density function
         redshift : float
             Redshift at which to evaluate the probability density function
+        gamma1 : float, optional
+            Upper slope. Default is -0.65, +/- 0.04
+        gamma2 : float, optional
+            Lower slope. Default is -2.1 +0.3/-0.5, value of -1.65 matches the data in Model C, but -2.1 is from the abstract
+        lambda_break : float, optional
+            Knee. Default is 0.0
+        A : float, optional
+            Normalization. Default is -3.15 +/- 0.08
+        beta : float, optional
+            Parameter for redshift evolution. Default is 3.5 +/- 0.5
+        z0 : float, optional
+            Reference redshift. Default is 0.6
         mth : module, optional
             Module to use for mathematical functions. Default is numpy.
         
@@ -1411,36 +1433,30 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        gamma1 = -0.65  # +/- 0.04
-        A = -3.15  # +/- 0.08
-        beta = 3.5  # +/_ 0.5
-        z0 = 0.6
+        p_low = 10**A * (10**loglambda_grid)**gamma1 * ((1 + redshift)/(1 + z0))**beta
 
-        plow = 10**A * (10**loglambdas)**gamma1 * ((1 + redshift)/(1 + z0))**beta
+        p_hi = 10**A * (10**loglambda_grid)**gamma2 * ((1 + redshift)/(1 + z0))**beta
 
-        gamma2 = -2.1  # + 0.3 /- 0.5 A value of -1.65 matches the data in Model C, but -2.1 is from the abstract
-        lambda_break = 0.0
+        plam = mth.where(loglambda_grid < lambda_break, p_low, p_hi)
+        plam = mth.where(loglambda_grid < -4, 1e-5, plam)
 
-        phi = 10**A * (10**loglambdas)**gamma2 * ((1 + redshift)/(1 + z0))**beta
-
-        plam = mth.where(loglambdas < lambda_break, plow, phi)
-        return plam / np.trapz(plam, loglambdas)
+        # return plam / mth.trapz(plam, loglambda_grid)
+        dlam = loglambda_grid[1] - loglambda_grid[0]
+        norm = mth.sum(plam) * dlam
+        return plam / norm
     
-    def Prob_loglam_Cao(self, loglam, beta_l=0.3, lam_peak=2.5, lam_min=1e-4, mth=None):
+    def Prob_loglam_Cao(self, loglambda_grid, beta_l=0.3, lam_peak=2.5, mth=None):
         """
         Returns normalized zeta(lambda) = dN / dloglambda based on the functional form used in `Cao (2023) <https://ui.adsabs.harvard.edu/abs/2010ApJ...725..388C/abstract>`_.
 
         Parameters
         ----------
-        loglam : array
-            log10(lambda)
-
+        loglambda_grid : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function
         beta_l : float
             Power-law slope
-
         lam_peak : float
             Exponential cutoff scale
-
         lam_min : float
             Minimum Eddington ratio
 
@@ -1453,16 +1469,89 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        lam = 10**loglam
+        lam = 10**loglambda_grid
 
         zeta = (lam / lam_peak)**(-beta_l) * mth.exp(-lam / lam_peak)
 
-        zeta[lam < lam_min] = 0.0
+        zeta = mth.where(lam < 10**-4, 1, zeta)
 
-        return zeta / mth.trapz(zeta, x=loglam)
+        # zeta / mth.trapz(zeta, x=loglambda_grid)
+        # return zeta / mth.trapz(zeta, x=loglambda_grid)
+        dlam = loglambda_grid[1] - loglambda_grid[0]
+        norm = mth.sum(zeta) * dlam
+        return zeta / norm
+
+    def Prob_loglam_Inactive(self, loglambda_grid, loglam_norm=-10, sig=1, mth=None):
+        """
+        Eddington ratio distribution function for inactive black holes.
+
+        Parameters
+        ----------
+        loglambda_grid : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function
+        loglam_norm : float, optional
+            Median log10 value of Eddington fraction for the inactive black holes. Default is -10
+        sig : float, optional
+            Scatter on the distribution. Default is 1
+        mth : module, optional
+            Module to use for mathematical functions. Default is numpy.
+
+        Returns
+        -------
+        prob : array
+            The probability density function of log lambda at the given redshift, evaluated at the input log lambda values.
+        """
+        if mth is None:
+            import numpy as mth
+
+        if loglam_norm is None:
+            loglam_norm = -10
+        if sig is None:
+            sig = 1
+        
+        # F = 0.38  # Type-1 only, Compton thin fraction
+        F = 0.99
+        Ploglam =  F / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid - loglam_norm)**2 / (2 * sig**2)))
+        
+        # return Ploglam / mth.trapz(Ploglam, loglambda_grid)
+        dlam = loglambda_grid[1] - loglambda_grid[0]
+        norm = mth.sum(Ploglam) * dlam
+        return Ploglam / norm
+        
+    def Prob_loglam_Fractional(self, loglambda_grid, Factive, Ploglam_active, loglam_norm=None, sig=None, mth=None):
+        """
+        Returns normalized zeta(lambda) = dN / dloglambda based on the functional form used in `Cao (2023) <https://ui.adsabs.harvard.edu/abs/2010ApJ...725..388C/abstract>`_.
+
+        .. todo::
+            Add black hole mass and redshift dependence
+
+        Parameters
+        ----------
+        loglambda_grid : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function
+        Factive : float or array
+            The active fraction(s)
+        Ploglam_active : array
+            The probabilitiy distribution function of active black holes
+        mth : module, optional
+            Module to use for mathematical functions. Default is numpy.
+
+        Returns
+        -------
+        zeta : array
+            Normalized probability density in dlog10(lambda)
+        """
+
+        Ploglam_inactive = self.Prob_loglam_Inactive(loglambda_grid, mth=mth, loglam_norm=loglam_norm, sig=sig)
+    
+        Plam_tot = Ploglam_inactive * (1 - Factive) + Ploglam_active * Factive
+
+        # print(np.trapz(Plam_tot, loglambda_grid), np.trapz(Ploglam_inactive, loglambda_grid), np.trapz(Ploglam_active, loglambda_grid))
+
+        return Plam_tot
                     
     
-    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, Pfunc='Shen', facfunc='Interp', mth=None):
+    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, Pfunc='Shen', facfunc='Interp', mth=None, **kwargs):
         """
         Compute black hole mass function from luminosity function using an Eddington ratio distribution function.
 
@@ -1484,12 +1573,17 @@ class Model_Info(object):
             Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
         mth : module, optional
             Module to use for mathematical functions. Default is None which sets mth = numpy.
+        kwargs : optional
+            Input parameters for the probability density function of log lambda
 
         Returns
         -------
         Phi_M : array
             Black hole mass function
         """
+
+        print('Warning: This funciton is depricated and will be removed in a future version!')
+
         if mth is None:
             import numpy as mth
 
@@ -1498,13 +1592,13 @@ class Model_Info(object):
         Phi_M = mth.zeros_like(Mbh_grid)
 
         if Pfunc == 'Shen':
-            Ploglam = self.Prob_loglam_Shen(loglambda_grid, redshift)
+            Ploglam = self.Prob_loglam_Shen(loglambda_grid, redshift, mth=mth, **kwargs)
  
         elif Pfunc == 'Aird':
-            Ploglam = self.Prob_loglam_Aird(loglambda_grid, redshift)
+            Ploglam = self.Prob_loglam_Aird(loglambda_grid, redshift, mth=mth, **kwargs)
         
         elif Pfunc == 'Cao':
-            Ploglam = self.Prob_loglam_Cao(loglambda_grid, redshift)
+            Ploglam = self.Prob_loglam_Cao(loglambda_grid, redshift, mth=mth, **kwargs)
 
         if facfunc == 'Zou':
             Factive = self.facfunc_zou(mth.log10(Mbh_grid), redshift)
@@ -1532,8 +1626,9 @@ class Model_Info(object):
 
         return Phi_M
 
-    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', a=0.469, b=-22.46, facfunc='Interp', mth=None):
+    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', facfunc='Interp', mth=None, **kwargs):
         """
+        Convert a luminosity function into a mass function following the 'convolution' method from `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`.
 
         Parameters
         ---------
@@ -1547,12 +1642,14 @@ class Model_Info(object):
             Scatter in log lambda at fixed black hole mass, assumed to be Gaussian
         redshift : float
             Redshift at which to evaluate the black hole mass function
-        lambda_func : str, optional
-            Which functional form to use for calculating mean log lambda as a function of black hole mass, options are 'Shen' and 'Line'. Default is 'Shen'.
+        loglam_func : str, optional
+            Which functional form to use for calculating mean log lambda as a function of black hole mass, 'Shen' is currently the only option. Default is 'Shen'.
         facfunc : str or int, optional
             Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
         mth : module, optional
             Module to use for mathematical functions. Default is numpy.
+        kwargs : float, optional
+            Values of the parameters to be passed into the Eddington fraction function.
 
         Returns
         -------
@@ -1570,16 +1667,7 @@ class Model_Info(object):
         logL_2d = lum_log10[:, None]  # axis 0: L
 
         if loglam_func == 'Shen':
-            loglam = self.loglamL_func_shen(logL_2d, a=a, b=b, mth=mth)
-
-        mean_logM_at_L = logL_2d - loglam - logC
-
-        # gaussian kernel in dex units
-        inv_sqrt2pi = 1.0 / mth.sqrt(2.0 * mth.pi)
-        exponent = -0.5 * ((mbh_log10 - mean_logM_at_L) / sigma)**2
-        K = inv_sqrt2pi / sigma * mth.exp(exponent)  # units: 1/dex
-
-        phiM = mth.dot(phiL, K) * dlogL # result shape (nM,)  in Mpc^-3 dex^-1
+            loglam = self.loglamL_func_shen(logL_2d, mth=mth, **kwargs)
 
         if facfunc == 'Zou':
             Factive = self.facfunc_zou(mbh_log10, redshift)
@@ -1596,7 +1684,16 @@ class Model_Info(object):
         elif type(facfunc) != str:
             Factive = facfunc
 
-        return phiM / Factive
+        mean_logM_at_L = logL_2d - loglam - logC
+
+        # gaussian kernel in dex units
+        inv_sqrt2pi = 1.0 / mth.sqrt(2.0 * mth.pi)
+        exponent = -0.5 * ((mbh_log10 - mean_logM_at_L) / sigma)**2
+        K = inv_sqrt2pi / sigma * mth.exp(exponent)  # units: 1/dex
+
+        phiM = mth.dot(phiL / Factive, K) * dlogL # result shape (nM,)  in Mpc^-3 dex^-1
+
+        return phiM
     
     def PhiM_to_PhiL_erdf_Shan(self, lum_log10, mbh_log10, loglambda_grid, redshift, N0, alpha, beta, mbh_star, mth=None):
         """
@@ -1634,7 +1731,7 @@ class Model_Info(object):
 
         dlogM = mth.log10(mbh_log10)[1] - mth.log10(mbh_log10)[0]
 
-        phi_L = mth.zeros_like(lum_log10)
+        phiL = mth.zeros_like(lum_log10)
 
         Ploglam = self.Prob_loglam_Shen(loglambda_grid, redshift)
 
@@ -1645,17 +1742,17 @@ class Model_Info(object):
                 loglam =  L - mbh_log10 - mth.log10(C_edd)
                 P_interp = mth.interp(loglam, loglambda_grid, Ploglam, left=0.0, right=0.0)
 
-                phi_L[i] = mth.sum(P_interp * Factive * dlogM / mth.log(10))
+                phiL[i] = mth.sum(P_interp * Factive * dlogM / mth.log(10))
         except:
             for i, L in enumerate(lum_log10):
                 loglam =  L - mbh_log10 - mth.log10(C_edd)
                 P_interp = mth.interp(loglam, loglambda_grid, Ploglam, left=0.0, right=0.0)
 
-                phi_L = mth.set_subtensor(phi_L[i], mth.sum(P_interp * Factive * dlogM / mth.log(10)))
+                phiL = mth.set_subtensor(phiL[i], mth.sum(P_interp * Factive * dlogM / mth.log(10)))
 
-        return phi_L
+        return phiL
     
-    def PhiM_to_PhiL_erdf(self, mbh_log10, phiM, redshift, logL_grid, loglambda_grid, Pfunc='Shen', facfunc='Interp', mth=None):
+    def PhiM_to_PhiL_erdf(self, mbh_log10, phiM, redshift, logL_grid, loglambda_grid, Pfunc='Shen', Fractional=False, facfunc='Interp', mth=None, loglam_norm=None, sig=None, **kwargs):
         """
         Convert a BH mass function into an AGN luminosity function.
 
@@ -1663,49 +1760,31 @@ class Model_Info(object):
         ----------
         mbh_log10 : array
             log10(M_BH / Msun)
-
         phiM : array
             Phi_BH(logM)
-            Units:
-                Mpc^-3 dex^-1
-
-        logL_grid : array or None
+        logL_grid : array
             log10(Lbol / erg s^-1)
-            If None, autogenerated.
-
-        loglam_grid : array or None
+        loglambda_grid : array
             log10(Eddington ratio grid)
-            If None, autogenerated.
-
-        beta_l, lam_peak, lam_min :
-            Parameters of Eddington ratio distribution.
+        Pfunc : str or float
+            Function to use for the ERDF, options are Shen, Aird, and Cao. Default is Shen.
+        Fractional : bool, optional
+            Flag for how to use the active fraction. Default is False.
+        facfunc : str or int, optional
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
+        mth : module, optional
+            Module to use for mathematical functions. Default is numpy.
+        kwargs : optional
+            Input parameters for the probability density function of log lambda
 
         Returns
         -------
-        logL_grid : array
-        agnlf : array
-            Phi(Lbol)
-            Units:
-                Mpc^-3 dex^-1
+        phiL : array
+            The number density per unit log luminosity for the AGN luminosity function
         """
 
         if mth is None:
             import numpy as mth
-
-        # --------------------------------------------------------
-        # lambda grid
-        # --------------------------------------------------------
-
-        lam = 10**loglambda_grid
-
-        if Pfunc == 'Shen':
-            Ploglam = self.Prob_loglam_Shen(loglambda_grid, redshift)
- 
-        elif Pfunc == 'Aird':
-            Ploglam = self.Prob_loglam_Aird(loglambda_grid, redshift)
-        
-        elif Pfunc == 'Cao':
-            Ploglam = self.Prob_loglam_Cao(loglambda_grid, redshift)
 
         if facfunc == 'Zou':
             Factive = self.facfunc_zou(mbh_log10, redshift)
@@ -1721,30 +1800,61 @@ class Model_Info(object):
         
         elif type(facfunc) != str:
             Factive = facfunc
-        # --------------------------------------------------------
-        # luminosity grid
-        # --------------------------------------------------------
 
-        if logL_grid is None:
 
-            logL_min = mth.min(mbh_log10) + mth.min(loglambda_grid) + mth.log10(C_edd)
-            logL_max = mth.max(mbh_log10) + mth.max(loglambda_grid) + mth.log10(C_edd)
+        if Pfunc == 'Shen':
+            Ploglam = self.Prob_loglam_Shen(loglambda_grid, redshift, mth=mth, **kwargs)
+ 
+        elif Pfunc == 'Aird':
+            Ploglam = self.Prob_loglam_Aird(loglambda_grid, redshift, mth=mth, **kwargs)
+        
+        elif Pfunc == 'Cao':
+            Ploglam = self.Prob_loglam_Cao(loglambda_grid, redshift, mth=mth, **kwargs)
 
-            logL_grid = mth.linspace(logL_min, logL_max, 300)
-
+        if Fractional == True:
+            if facfunc == 'Zou':
+                raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
+            Ploglam = self.Prob_loglam_Fractional(loglambda_grid, Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
+            Factive = 1  # This avoids double counting Factive in the integral below
+        
+        #################################
+        
         phiL = mth.zeros_like(logL_grid)
 
-        for i, logL in enumerate(logL_grid):
+        # for i, logL in enumerate(logL_grid):
 
+        #     logM_edd = (logL - loglambda_grid - mth.log10(C_edd))
+
+        #     # interpolate BHMF onto required masses
+        #     phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
+
+        #     if facfunc == 'Zou' and Fractional != True:
+        #         Factive = mth.interp(logM_edd, mbh_log10, Factive, left=0.0, right=mth.nanmax(Factive))
+
+        #     # integral over dloglambda
+        #     # phiL[i] = mth.trapz(phiM_interp * Ploglam * Factive, x=loglambda_grid)
+        #     dlam = loglambda_grid[1] - loglambda_grid[0]
+        #     phiL[i] = mth.sum(phiM_interp * Ploglam * Factive) * dlam
+
+
+        phiL_list = []
+
+        for logL in logL_grid:
             logM_edd = (logL - loglambda_grid - mth.log10(C_edd))
 
-            # interpolate BHMF onto required masses
-            phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, left=0.0, right=0.0)
+            phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
 
-            if facfunc == 'Zou':
-                Factive = mth.interp(logM_edd, mbh_log10, Factive, left=0.0, right=0.0)
+            if facfunc == 'Zou' and Fractional != True:
+                Factive = mth.interp(logM_edd, mbh_log10, Factive, left=0.0, right=mth.nanmax(Factive))
+            else:
+                Factive = Factive
 
-            # integral over dloglambda
-            phiL[i] = mth.trapz(phiM_interp * Ploglam * Factive, x=loglambda_grid)
+            dlam = loglambda_grid[1] - loglambda_grid[0]
 
-        return logL_grid, phiL
+            integrand = mth.sum(phiM_interp * Ploglam * Factive) * dlam
+            phiL_list.append(integrand)
+
+        phiL = mth.stack(phiL_list)
+        return phiL
+
+        # return phiL
