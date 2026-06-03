@@ -546,6 +546,7 @@ class Model_Info(object):
             mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.params['mmb_mamp_log10'],
                                                             mplaw = self.params['mmb_plaw'],
                                                             scatter_dex = self.params['mmb_scatter_dex'])
+
         
         return gsmf.mbh_mass_func_conv(10**mbh_log10 * MSOL, redshift, mmbulge=mmb, scatter=True)
     
@@ -884,6 +885,32 @@ class Model_Info(object):
             The active fraction of black holes as a function of redshift  
         """
         yvals = [0.01155760379692579, 0.024757591972556545, 0.0422131185738816, 0.06182450643481384, 0.08187823766345483, 0.10137354266892258, 0.11988088153114007, 0.13727233872774394, 0.15347464540720532, 0.16829037484606227, 0.18130133659343955, 0.18780050567575066, 0.19126556062586866, 0.19125173275475665, 0.18764478684847097, 0.1807696242254012, 0.17684420349963398, 0.17054284479086534, 0.16277088257305478, 0.15436150776267812, 0.14597480967203288, 0.1326862974740685, 0.12077011741805042, 0.11022740137039008, 0.10098672690611846, 0.09294512607316838, 0.08599544231733751, 0.08004474648745918, 0.07502851328716545]
+        xvals = [0.2, 0.4, 0.6, 0.8, 1. , 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3. , 3.2, 3.4, 3.6, 3.8, 4. , 4.2, 4.4, 4.6, 4.8, 5.0 , 5.2, 5.4, 5.6, 5.8]
+        Factive = np.interp(redshift, xvals, yvals)
+        try:
+            Factive[Factive < facmin] = facmin
+        except TypeError:
+            if Factive < facmin:
+                Factive = facmin
+        return Factive
+
+    def facfunc_interp_low(self, redshift, facmin=0.0):
+        """
+        Interpolated AGN fraction.
+        
+        Parameters
+        ----------
+        redshift : float
+            Redshift at which to evaluate the AGN fraction
+        facmin : float, optional
+            Minimum AGN fraction to return, default is 0.0  
+
+        Returns
+        -------
+        Factive : float
+            The active fraction of black holes as a function of redshift  
+        """
+        yvals = [0.00023609, 0.00031303, 0.00040196, 0.01062755, 0.02548049, 0.03880656, 0.0469578, 0.04854918, 0.06406479, 0.05828811, 0.05165821, 0.04513916, 0.03922779, 0.03457372, 0.02264437, 0.01873795, 0.01827168, 0.01202795, 0.01116053, 0.00605409, 0.00374844, 0.00210164, 0.00110246, 0.00053921, 0.00023606, 8.97096355e-05, 4.80775668e-05, 5.52178914e-05, 4.62499686e-05]
         xvals = [0.2, 0.4, 0.6, 0.8, 1. , 1.2, 1.4, 1.6, 1.8, 2. , 2.2, 2.4, 2.6, 2.8, 3. , 3.2, 3.4, 3.6, 3.8, 4. , 4.2, 4.4, 4.6, 4.8, 5.0 , 5.2, 5.4, 5.6, 5.8]
         Factive = np.interp(redshift, xvals, yvals)
         try:
@@ -1371,7 +1398,7 @@ class Model_Info(object):
         lam1 : float, optional
             The characteristic Eddington ratio at which the power law component turns over. Default is 1.5.
         mth : module, optional
-            Module to use for mathematical functions. Default is numpy.
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
 
         Returns
         -------
@@ -1423,7 +1450,7 @@ class Model_Info(object):
         z0 : float, optional
             Reference redshift. Default is 0.6
         mth : module, optional
-            Module to use for mathematical functions. Default is numpy.
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
         
         Returns
         -------
@@ -1439,6 +1466,42 @@ class Model_Info(object):
 
         plam = mth.where(loglambda_grid < lambda_break, p_low, p_hi)
         plam = mth.where(loglambda_grid < -4, 1e-5, plam)
+
+        # return plam / mth.trapz(plam, loglambda_grid)
+        dlam = loglambda_grid[1] - loglambda_grid[0]
+        norm = mth.sum(plam) * dlam
+        return plam / norm
+
+    def Prob_loglam_Ananna(self, loglambda_grid, zeta_star=10**-3.64, lambda_star=-1.338, delta1=0.38, eta_lambda=2.260, mth=None):
+        """
+        Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 3.
+
+        :math:`\\xi\left(\log \lambda_{\mathrm{E}}\right)=\frac{d N}{d \log \lambda_{\mathrm{E}}} \propto \\xi^* \times\left[\left(\frac{\lambda_{\mathrm{E}}}{\lambda_{\mathrm{E}}^*}\right)^{\delta_1}+\left(\frac{\lambda_{\mathrm{E}}}{\lambda_{\mathrm{E}}^*}\right)^{\delta_2}\right]^{-1}`
+
+        Parameters
+        ----------
+        loglambda_grid : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function
+        zeta_star : float
+            Normalization of the distribution function
+        lambda_star : float
+            Characteristic Eddington ratio at which the power law component turns over. Default is -1.338
+        delta1 : float
+            Power law slope at low Eddington ratios. Default is 0.38
+        eta_lambda : float
+            Parameter controlling the steepness of the exponential cutoff at high Eddington ratios. Default is 2.260
+        mth : module, optional
+            Module to use for mathematical functions. Default is None.
+
+        Returns
+        -------
+        prob : array
+            The probability density function of log lambda at the given redshift, evaluated at the input log lambda values.
+        """
+        if mth is None:
+            import numpy as mth
+
+        plam = zeta_star / ((loglambda_grid / lambda_star)**(delta1) + (loglambda_grid / lambda_star)**(delta1 + eta_lambda))
 
         # return plam / mth.trapz(plam, loglambda_grid)
         dlam = loglambda_grid[1] - loglambda_grid[0]
@@ -1494,7 +1557,7 @@ class Model_Info(object):
         sig : float, optional
             Scatter on the distribution. Default is 1
         mth : module, optional
-            Module to use for mathematical functions. Default is numpy.
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
 
         Returns
         -------
@@ -1534,7 +1597,7 @@ class Model_Info(object):
         Ploglam_active : array
             The probabilitiy distribution function of active black holes
         mth : module, optional
-            Module to use for mathematical functions. Default is numpy.
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
 
         Returns
         -------
@@ -1570,7 +1633,7 @@ class Model_Info(object):
         Pfunc : str, optional
             Which functional form to use for calculating the probability density function of log lambda, options are 'Shen', 'Aird', and 'Cao'. Default is 'Shen'.
         facfunc : str or int, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', 'Interp' and 'Interp_low'. Default is 'Interp'.
         mth : module, optional
             Module to use for mathematical functions. Default is None which sets mth = numpy.
         kwargs : optional
@@ -1612,6 +1675,9 @@ class Model_Info(object):
         elif facfunc == 'Interp':
             Factive = self.facfunc_interp(redshift)
 
+        elif facfunc == 'Interp_low':
+            Factive = self.facfunc_interp_low(redshift)
+
         elif type(facfunc) != str:
             Factive = facfunc
 
@@ -1645,9 +1711,9 @@ class Model_Info(object):
         loglam_func : str, optional
             Which functional form to use for calculating mean log lambda as a function of black hole mass, 'Shen' is currently the only option. Default is 'Shen'.
         facfunc : str or int, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube' 'Interp', and 'Interp_low'. Default is 'Interp'.
         mth : module, optional
-            Module to use for mathematical functions. Default is numpy.
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
         kwargs : float, optional
             Values of the parameters to be passed into the Eddington fraction function.
 
@@ -1680,6 +1746,9 @@ class Model_Info(object):
 
         elif facfunc == 'Interp':
             Factive = self.facfunc_interp(redshift)
+
+        elif facfunc == 'Interp_low':
+            Factive = self.facfunc_interp_low(redshift)
 
         elif type(facfunc) != str:
             Factive = facfunc
@@ -1771,9 +1840,9 @@ class Model_Info(object):
         Fractional : bool, optional
             Flag for how to use the active fraction. Default is False.
         facfunc : str or int, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', and 'Interp'. Default is 'Interp'.
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube' 'Interp', and 'Interp_low'. Default is 'Interp'.
         mth : module, optional
-            Module to use for mathematical functions. Default is numpy.
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
         kwargs : optional
             Input parameters for the probability density function of log lambda
 
@@ -1797,6 +1866,9 @@ class Model_Info(object):
 
         elif facfunc == 'Interp':
             Factive = self.facfunc_interp(redshift)
+
+        elif facfunc == 'Interp_low':
+            Factive = self.facfunc_interp_low(redshift)
         
         elif type(facfunc) != str:
             Factive = facfunc
