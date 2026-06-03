@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+docs/source/conf.py
+gwb_analysis/analyze_model.py
+gwb_analysis.egg-info/PKG-INFO
+gwb_analysis.egg-info/SOURCES.txt
+gwb_analysis.egg-info/dependency_links.txt
+gwb_analysis.egg-info/requires.txt
+gwb_analysis.egg-info/top_level.txt
+tests/test_inits.py
