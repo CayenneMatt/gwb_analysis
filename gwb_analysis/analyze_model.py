@@ -29,10 +29,6 @@ class Model_Info(object):
 
     .. seealso::
         This class works with outputs from `holodeck <https://github.com/nanograv/holodeck>`_.
-
-    .. todo::
-        Figure out how to get this to interface with PyMC
-        Clean up slow functions
     
     Parameters
     -----------
@@ -1584,9 +1580,6 @@ class Model_Info(object):
     def Prob_loglam_Fractional(self, loglambda_grid, Factive, Ploglam_active, loglam_norm=None, sig=None, mth=None):
         """
         Returns normalized zeta(lambda) = dN / dloglambda based on the functional form used in `Cao (2023) <https://ui.adsabs.harvard.edu/abs/2010ApJ...725..388C/abstract>`_.
-
-        .. todo::
-            Add black hole mass and redshift dependence
 
         Parameters
         ----------
