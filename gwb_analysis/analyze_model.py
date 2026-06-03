@@ -13,10 +13,15 @@ import kalepy as kale
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from astropy.cosmology import WMAP9 as cosmo
-from numpy import trapz
+try:
+    from numpy import trapz
+except:
+    from numpy import trapezoid as trapz
 import astropy.units as u
 import astropy.constants as c
 import scipy.integrate as inte
+
+import ast
 
 import copy
 
@@ -104,7 +109,7 @@ class Model_Info(object):
         Dictionary of plot labels associated with each parameter, used for plotting
     """
     # Attributes
-    def __init__(self, path, file, model_name, color, line_style, threshold=0.5, evolving=False, stdev=None, nfreq=5, param_space_name = 'PS_Astro_Strong_All'):
+    def __init__(self, path, file, model_name, color, line_style, threshold=0.5, evolving=False, stdev=None, nfreq=5, param_space_name='PS_Astro_Strong_All'):
 
         self.path = path  # Path to data
         self.file = file  # Filename
@@ -113,7 +118,10 @@ class Model_Info(object):
         # Data
         dat = np.load(self.path+self.file)
         self.gwb = dat['gwb']  # GWB amplitudes for each model
-        self.param_names = dat['names']  # Names of parameters in the model
+        try:
+            self.param_names = dat['names']  # Names of parameters in the model
+        except:
+            self.param_names = ast.literal_eval(input('Parameter names not found in data, please input parameter names as a list: '))
         self.param_samples = dat['params']  # Parameter sample associated with each model
         self.ln_like = dat['ln_like']  # Log-likelihood of each model
         self.freqs = np.array(dat['fobs_cents'])  # Frequencies for all models
@@ -128,9 +136,12 @@ class Model_Info(object):
         self.nfreq = nfreq  # Number of frequency bits to fit to. Default is 5
         self.idcs = None  # Index of evolution parameter
 
-        id = np.where((self.param_names == 'mmb_zplaw') | (self.param_names == 'mmb_zplaw_amp') | (self.param_names == 'mmb_zplaw_slope') | (self.param_names == 'mmb_zplaw_scatter'))[0]
-        if len(id) > 0:
-            self.idcs = id
+        try:
+            id = np.where((self.param_names == 'mmb_zplaw') | (self.param_names == 'mmb_zplaw_amp') | (self.param_names == 'mmb_zplaw_slope') | (self.param_names == 'mmb_zplaw_scatter'))[0]
+            if len(id) > 0:
+                self.idcs = id
+        except:
+            self.idcs = None
 
         if 'mmb_zplaw' in self.param_names:
             self.param_names[id] = 'mmb_zplaw_amp'
@@ -473,7 +484,7 @@ class Model_Info(object):
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
     
-    def add_spectrum(self, ax, errorbars=False, label=None, **kwargs):
+    def add_spectrum(self, ax, line=True, errorbars=False, logx=True, logy=False, label=None, **kwargs):
         """
         Add the spectrum of the model to a given axis, with optional error bars and label.
 
@@ -499,12 +510,28 @@ class Model_Info(object):
         
         gwb = np.median(self.gwb, axis=2)
 
-        ax.plot(np.log10(self.freqs), gwb[sim_idx], ls=self.line_style, c=self.color, label=label, **kwargs)
+        if logx == True:
+            freqs = np.log10(self.freqs)
+        else:
+            freqs = self.freqs
+
+        if line == True:
+            if logy == True:
+                gwby = np.log10(gwb[sim_idx])
+            else:
+                gwby = gwb[sim_idx]
+
+            ax.plot(freqs, gwby, ls=self.line_style, c=self.color, label=label, **kwargs)
+
         if errorbars:
             valid = np.where((vals >= (np.nanmax(vals)- self.threshold)))[0]
             up = np.max(gwb[valid], axis=0)
             dn = np.min(gwb[valid], axis=0)
-            ax.fill_between(np.log10(self.freqs), up, dn, color=self.color, alpha=0.25)
+            if logy == True:
+                up = np.log10(up)
+                dn = np.log10(dn)
+
+            ax.fill_between(freqs, up, dn, color=self.color, alpha=0.25)
 
     def bhmf(self, mbh_log10, redshift):
         r"""
