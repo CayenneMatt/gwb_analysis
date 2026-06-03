@@ -840,7 +840,7 @@ class Model_Info(object):
     
     def facfunc_cube(self, redshift):
         """
-        Functional form assumed by `Wu et al. (2026) < https://ui.adsabs.harvard.edu/abs/2026arXiv260504776W/abstract>`_
+        Functional form assumed by `Wu et al. (2026) <https://ui.adsabs.harvard.edu/abs/2026arXiv260504776W/abstract>`_.
         Factive = 0.0004 * (1 + z)^3, here this is then multiplied by 10 since their AGN fraction is weighted.
 
         Parameters
@@ -1425,8 +1425,6 @@ class Model_Info(object):
         Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
         equation 1, has overal scatter of 0.38 dex. Individual reported uncertainties on input parameters are indicated below.
 
-        :math:`p\left(\lambda \mid \mathcal{M}_*, z\right) d \log \lambda=A \lambda^\gamma\left(\frac{1+z}{1+z_0}\right)^\beta d \log \lambda`
-
         Parameters
         ----------
         loglambda_grid : array
@@ -1471,8 +1469,6 @@ class Model_Info(object):
     def Prob_loglam_Ananna(self, loglambda_grid, zeta_star=10**-3.64, lambda_star=-1.338, delta1=0.38, eta_lambda=2.260, mth=None):
         """
         Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 3.
-
-        :math:`\\xi\left(\log \lambda_{\mathrm{E}}\right)=\frac{d N}{d \log \lambda_{\mathrm{E}}} \propto \\xi^* \times\left[\left(\frac{\lambda_{\mathrm{E}}}{\lambda_{\mathrm{E}}^*}\right)^{\delta_1}+\left(\frac{\lambda_{\mathrm{E}}}{\lambda_{\mathrm{E}}^*}\right)^{\delta_2}\right]^{-1}`
 
         Parameters
         ----------
@@ -1690,7 +1686,7 @@ class Model_Info(object):
         Convert a luminosity function into a mass function following the 'convolution' method from `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`.
 
         Parameters
-        ---------
+        ----------
         lum_log10 : array
             Grid of log luminosities at which the luminosity function is evaluated
         phiL : array
