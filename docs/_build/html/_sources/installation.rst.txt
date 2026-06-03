@@ -22,9 +22,3 @@ There is no requirements.txt file, but this library is dependent on `holodeck <h
    python setup.py build_ext -i
    python setup.py develop
    conda install -c conda-forge mpi4py openmpi
-
-Optional:
-
-.. code-block:: console
-
-   pip install chainconsumer==0.33.0 scipy==1.10 la_forge
