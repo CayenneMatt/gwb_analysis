@@ -121,7 +121,7 @@ class Model_Info(object):
         try:
             self.param_names = dat['names']  # Names of parameters in the model
         except:
-            self.param_names = ast.literal_eval(input('Parameter names not found in data, please input parameter names as a list: '))
+            self.param_names = np.array(ast.literal_eval(input('Parameter names not found in data, please input parameter names as a list: ')))
         self.param_samples = dat['params']  # Parameter sample associated with each model
         self.ln_like = dat['ln_like']  # Log-likelihood of each model
         self.freqs = np.array(dat['fobs_cents'])  # Frequencies for all models
@@ -200,9 +200,15 @@ class Model_Info(object):
                             'hard_nu_inner'         : r"$\nu_\mathrm{inner}$",
                             'hard_r_gw_crit_9'      : r'R$_\mathrm{GW, crit}$',
                             'hard_alpha_gw_crit'    : r"$\alpha_\mathrm{GW, crit}$",
-                            'hard_beta_gw_crit'    : r"$\beta_\mathrm{GW, crit}$",
+                            'hard_beta_gw_crit'     : r"$\beta_\mathrm{GW, crit}$",
                             'gsmf_phi0_log10'       : r"$\log \phi_{*}$",
                             'gsmf_mchar0_log10'     : r"$\log M_{\mathrm{c}}$",
+                            'gsmf_phi0_p'             : r"GSMF $\psi_0$",
+                            'gsmf_mchar0_log10_p'     : r"GSMF $m_{\psi,0}$",
+                            'mmb_mamp_log10_p'        : r"MMB $\mu$",
+                            'mmb_scatter_dex_p'       : r"MMB $\epsilon_{\mu}$",
+                            'hard_time_p'             : r"phenom $\tau_f$",
+                            'hard_gamma_inner_p'      : r"phenom $\nu_\mathrm{inner}$",
                             'gsmf_log10_phi_one_z0' : r"$\log \phi_{*, 1,0}$",
                             'gsmf_log10_phi_one_z1' : r"$\phi_{*, 1,1}$",
                             'gsmf_log10_phi_one_z2' : r"$\phi_{*, 1,2}$",
@@ -271,7 +277,7 @@ class Model_Info(object):
 
         return self
 
-    def plot_histogram(self, ax, param_name, nbins=20, histtype='bar', label=None, prior=False, **kwargs):
+    def plot_histogram(self, ax, param_name, nbins=20, prior=False, **kwargs):
         """
         Plot a histogram of the posterior distribution for a given parameter, with optional prior distribution overlaid.
         
@@ -305,9 +311,9 @@ class Model_Info(object):
         xx = self.param_samples[:, msk]
         xx = xx[valid]
         if prior:
-            ax.hist(xx, density=True, bins=nbins, color='grey', histtype=histtype, linestyle=self.line_style, label=label, alpha=0.5)
+            ax.hist(xx, density=True, bins=nbins, **kwargs)
         if not prior:
-            ax.hist(xx, weights=weights_med, density=True, bins=nbins, color=self.color, histtype=histtype, linestyle=self.line_style, label=label, **kwargs)
+            ax.hist(xx, weights=weights_med, density=True, bins=nbins, **kwargs)
 
         return self
     
@@ -492,10 +498,16 @@ class Model_Info(object):
         ----------
         ax : Matplotlib axis
             axis to which the spectrum will be added
+        line : bool, optional
+            Whether to add a line for the spectrum. Default is True
         errorbars : bool, optional
-            Whether to add error bars to the spectrum, default is False
+            Whether to add error bars to the spectrum. Default is False
+        logx : bool, optional
+            Whether to plot the spectrum with a logarithmic x-axis. Default is True
+        logy : bool, optional
+            Whether to plot the spectrum with a logarithmic y-axis. Default is False
         label : str, optional
-            Label for the spectrum, default is None, in which case the model name will be used
+            Label for the spectrum. Default is None, in which case the model name will be used
         kwargs :
             additional keyword arguments to be passed to the plot function, such as linewidth or alpha
 
@@ -550,13 +562,20 @@ class Model_Info(object):
         bhmf : array-like
             Black hole mass function at the given redshift
         """
-        log10_phi1 = [self.params['gsmf_log10_phi_one_z0'], self.params['gsmf_log10_phi_one_z1'], self.params['gsmf_log10_phi_one_z2']]
-        log10_phi2 = [self.params['gsmf_log10_phi_two_z0'], self.params['gsmf_log10_phi_two_z1'], self.params['gsmf_log10_phi_two_z2']]
-        log10_mstar = [self.params['gsmf_log10_mstar_z0'], self.params['gsmf_log10_mstar_z1'], self.params['gsmf_log10_mstar_z2']]
-        alpha1 = self.params['gsmf_alpha_one']
-        alpha2 = self.params['gsmf_alpha_two']
-        
-        gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+        try:
+            log10_phi1 = [self.params['gsmf_log10_phi_one_z0'], self.params['gsmf_log10_phi_one_z1'], self.params['gsmf_log10_phi_one_z2']]
+            log10_phi2 = [self.params['gsmf_log10_phi_two_z0'], self.params['gsmf_log10_phi_two_z1'], self.params['gsmf_log10_phi_two_z2']]
+            log10_mstar = [self.params['gsmf_log10_mstar_z0'], self.params['gsmf_log10_mstar_z1'], self.params['gsmf_log10_mstar_z2']]
+            alpha1 = self.params['gsmf_alpha_one']
+            alpha2 = self.params['gsmf_alpha_two']
+            
+            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+
+        except:
+            log10_phi1 = self.params['gsmf_phi0_log10']
+            log10_mstar = self.params['gsmf_mchar0_log10']
+
+            gsmf = sams.GSMF_Schechter(phi0=log10_phi1, mchar0_log10=log10_mstar)
 
         try:
             mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.params['mmb_mamp_log10'],
@@ -602,14 +621,20 @@ class Model_Info(object):
 
         phis = []
         for j in range(ndraws):
-            log10_phi1 = [self.bhmf_dict['gsmf_log10_phi_one_z0'][j], self.bhmf_dict['gsmf_log10_phi_one_z1'][j], self.bhmf_dict['gsmf_log10_phi_one_z2'][j]]
-            log10_phi2 = [self.bhmf_dict['gsmf_log10_phi_two_z0'][j], self.bhmf_dict['gsmf_log10_phi_two_z1'][j], self.bhmf_dict['gsmf_log10_phi_two_z2'][j]]
-            log10_mstar = [self.bhmf_dict['gsmf_log10_mstar_z0'][j], self.bhmf_dict['gsmf_log10_mstar_z1'][j], self.bhmf_dict['gsmf_log10_mstar_z2'][j]]
-            alpha1 = self.bhmf_dict['gsmf_alpha_one'][j]
-            alpha2 = self.bhmf_dict['gsmf_alpha_two'][j]
+            try:
+                log10_phi1 = [self.bhmf_dict['gsmf_log10_phi_one_z0'][j], self.bhmf_dict['gsmf_log10_phi_one_z1'][j], self.bhmf_dict['gsmf_log10_phi_one_z2'][j]]
+                log10_phi2 = [self.bhmf_dict['gsmf_log10_phi_two_z0'][j], self.bhmf_dict['gsmf_log10_phi_two_z1'][j], self.bhmf_dict['gsmf_log10_phi_two_z2'][j]]
+                log10_mstar = [self.bhmf_dict['gsmf_log10_mstar_z0'][j], self.bhmf_dict['gsmf_log10_mstar_z1'][j], self.bhmf_dict['gsmf_log10_mstar_z2'][j]]
+                alpha1 = self.bhmf_dict['gsmf_alpha_one'][j]
+                alpha2 = self.bhmf_dict['gsmf_alpha_two'][j]
 
-            gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
-            
+                gsmf = sams.GSMF_Double_Schechter(log10_phi1, log10_phi2, log10_mstar, alpha1, alpha2)
+            except:
+                log10_phi1 = self.bhmf_dict['gsmf_phi0_log10']
+                log10_mstar = self.bhmf_dict['gsmf_mchar0_log10']
+
+                gsmf = sams.GSMF_Schechter(phi0=log10_phi1, mchar0_log10=log10_mstar)
+
             try:
                 mmb = holo.host_relations.MMBulge_Redshift_KH2013(mamp_log10 = self.bhmf_dict['mmb_mamp_log10'][j],
                                                                 mplaw = self.bhmf_dict['mmb_plaw'][j],
@@ -1495,7 +1520,7 @@ class Model_Info(object):
 
     def Prob_loglam_Ananna(self, loglambda_grid, zeta_star=10**-3.64, lambda_star=-1.338, delta1=0.38, eta_lambda=2.260, mth=None):
         """
-        Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 3.
+        Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 4.
 
         Parameters
         ----------
@@ -1521,10 +1546,9 @@ class Model_Info(object):
             import numpy as mth
 
         plam = zeta_star / ((loglambda_grid / lambda_star)**(delta1) + (loglambda_grid / lambda_star)**(delta1 + eta_lambda))
-
         # return plam / mth.trapz(plam, loglambda_grid)
         dlam = loglambda_grid[1] - loglambda_grid[0]
-        norm = mth.sum(plam) * dlam
+        norm = mth.nansum(plam) * dlam
         return plam / norm
     
     def Prob_loglam_Cao(self, loglambda_grid, beta_l=0.3, lam_peak=2.5, mth=None):
@@ -1908,22 +1932,6 @@ class Model_Info(object):
         #################################
         
         phiL = mth.zeros_like(logL_grid)
-
-        # for i, logL in enumerate(logL_grid):
-
-        #     logM_edd = (logL - loglambda_grid - mth.log10(C_edd))
-
-        #     # interpolate BHMF onto required masses
-        #     phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
-
-        #     if facfunc == 'Zou' and Fractional != True:
-        #         Factive = mth.interp(logM_edd, mbh_log10, Factive, left=0.0, right=mth.nanmax(Factive))
-
-        #     # integral over dloglambda
-        #     # phiL[i] = mth.trapz(phiM_interp * Ploglam * Factive, x=loglambda_grid)
-        #     dlam = loglambda_grid[1] - loglambda_grid[0]
-        #     phiL[i] = mth.sum(phiM_interp * Ploglam * Factive) * dlam
-
 
         phiL_list = []
 
