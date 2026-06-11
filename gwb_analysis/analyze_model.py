@@ -1509,19 +1509,19 @@ class Model_Info(object):
         p_hi = (linear_lambda_grid)**gamma2
 
         plam = 10**A * mth.where(loglambda_grid < lambda_break, p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta
-        plam = mth.where(loglambda_grid < -4, 1e-5, plam)
+        # plam = mth.where(loglambda_grid < -4, 1e-5, plam)
 
         dlam = loglambda_grid[1] - loglambda_grid[0]
         norm = mth.sum(plam) * dlam
         return plam / norm
 
-    def Prob_lam_Ananna(self, linear_lambda_grid, redshift, zeta_star=10**-3.64, lambda_star=10**-1.338, delta1=0.38, eta_lambda=2.260, mth=None):
+    def Prob_lam_Ananna(self, loglambda_grid, redshift, zeta_star=10**-3.64, lambda_star=10**-1.338, delta1=0.38, eta_lambda=2.260, mth=None):
         """
         Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 4.
 
         Parameters
         ----------
-        linear_lambda_grid : array
+        loglambda_grid : array
             Log10 of the Eddington ratio at which to evaluate the probability density function
         zeta_star : float
             Normalization of the distribution function
@@ -1542,12 +1542,54 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
+        linear_lambda_grid = 10**loglambda_grid
+
         zeta = zeta_star / ((linear_lambda_grid / lambda_star)**(delta1) + (linear_lambda_grid / lambda_star)**(delta1 + eta_lambda))
 
         volume = cosmo.comoving_volume(redshift).value
-        totN = mth.trapezoid(zeta * volume, linear_lambda_grid)
+        dloglam = loglambda_grid[1] - loglambda_grid[0]
+        totN = mth.sum(zeta * volume) * dloglam
         plam = zeta / totN
-        norm = mth.trapezoid(plam, linear_lambda_grid)
+        norm = mth.sum(plam) * dloglam
+        return plam / norm
+    
+    def Prob_lam_Ananna_mass(self, loglambda_grid, mbh_log10, redshift, zeta_star=10**-3.64, delta1=0.38, eta_lambda=2.260, mth=None):
+        """
+        Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 4.
+
+        Parameters
+        ----------
+        loglambda_grid : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function
+        zeta_star : float
+            Normalization of the distribution function, this version is normalized to be a probability function so this value does not affect the output. Default is 10**-3.64
+        delta1 : float
+            Power law slope at low Eddington ratios. Default is 0.38
+        eta_lambda : float
+            Parameter controlling the steepness of the exponential cutoff at high Eddington ratios. Default is 2.260
+        mth : module, optional
+            Module to use for mathematical functions. Default is None.
+
+        Returns
+        -------
+        prob : array
+            The probability density function of lambda at the given redshift, evaluated at the input log lambda values. Shape is (masses, loglambda_grid)
+        """
+        if mth is None:
+            import numpy as mth
+
+        linear_lambda_grid = 10**loglambda_grid
+
+        lambda_star = 10**(mbh_log10 * -0.8847984196821398 + 6.671410613271074)  # Default single value is 10**-1.338
+        # lambda_star = 10**0.0 * mth.ones(len(mbh_log10))  # No mass dependence version
+
+        zeta = zeta_star / ((linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1) + (linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1 + eta_lambda))
+
+        volume = cosmo.comoving_volume(redshift).value
+        dloglam = loglambda_grid[1] - loglambda_grid[0]
+        totN = mth.sum(zeta * volume, axis=1, keepdims=True) * dloglam
+        plam = zeta / totN
+        norm = mth.sum(plam, axis=1, keepdims=True) * dloglam
         return plam / norm
     
     def Prob_lam_Cao(self, linear_lambda_grid, beta_l=0.3, lam_peak=2.5, mth=None):
@@ -1954,4 +1996,58 @@ class Model_Info(object):
         phiL = mth.stack(phiL_list)
         return phiL
 
-        # return phiL
+    def PhiM_to_PhiL_erdf_mass(self, mbh_log10, phiM, redshift, logL_grid, loglambda_grid, Pfunc='Shen', Fractional=False, facfunc='Interp', mth=None, loglam_norm=None, sig=None, **kwargs):
+        """
+        Convert a BH mass function into an AGN luminosity function.
+
+        Parameters
+        ----------
+        mbh_log10 : array
+            log10(M_BH / Msun)
+        phiM : array
+            Phi_BH(logM)
+        logL_grid : array
+            log10(Lbol / erg s^-1)
+        loglambda_grid : array
+            log10(Eddington ratio grid)
+        Pfunc : str or float
+            Function to use for the ERDF, options are Shen, Aird, and Cao. Default is Shen.
+        Fractional : bool, optional
+            Flag for how to use the active fraction. Default is False.
+        facfunc : str or int, optional
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube' 'Interp', and 'Interp_low'. Default is 'Interp'.
+        mth : module, optional
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
+        kwargs : optional
+            Input parameters for the probability density function of log lambda
+
+        Returns
+        -------
+        phiL : array
+            The number density per unit log luminosity for the AGN luminosity function
+        """
+
+        if mth is None:
+            import numpy as mth
+        Factive = facfunc
+
+        #################################
+        
+        phiL = mth.zeros_like(logL_grid)
+
+        phiL_list = []
+
+        for logL in logL_grid:
+            logM_edd = (logL - loglambda_grid - mth.log10(C_edd))
+
+            phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
+
+            Ploglam = self.Prob_lam_Ananna_mass(loglambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
+            
+            dlam = loglambda_grid[1] - loglambda_grid[0]
+
+            integrand = mth.sum(phiM_interp * Ploglam * Factive) * dlam / len(logM_edd)
+            phiL_list.append(integrand)
+
+        phiL = mth.stack(phiL_list)
+        return phiL
