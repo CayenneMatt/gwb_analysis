@@ -1467,7 +1467,7 @@ class Model_Info(object):
 
         A = (1 - F) / Pt1 
 
-        A = A * mth.ones(mbh_log10.shape[1])
+        A = A * mth.ones(mbh_log10.shape[0])
         
         return (1 - F) * A[:,mth.newaxis] * (10**loglambda_grid[mth.newaxis,:])**(1 + alpha) * mth.exp(-10**loglambda_grid[mth.newaxis,:] / lam1) + F /\
         mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - loglam2)**2 / (2 * sig**2)))
@@ -1514,7 +1514,7 @@ class Model_Info(object):
 
         p_hi = (linear_lambda_grid)**gamma2
 
-        beta = beta * mth.ones(mbh_log10.shape[1])
+        beta = beta * mth.ones(mbh_log10.shape[0])
 
         plam = 10**A * mth.where(loglambda_grid < lambda_break, p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta[:,mth.newaxis]
 
@@ -1595,7 +1595,7 @@ class Model_Info(object):
 
         linear_lambda_grid = 10**loglambda_grid
         lambda_star = 10**(mbh_log10 * m + b)  # Default single value is 10**-1.338
-        # lambda_star = 10**0.0 * mth.ones(mbh_log10.shape[1])  # No mass dependence version
+        # lambda_star = 10**0.0 * mth.ones(mbh_log10.shape[0])  # No mass dependence version
 
         zeta = zeta_star / ((linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1) + (linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1 + eta_lambda))
 
@@ -1636,7 +1636,7 @@ class Model_Info(object):
         if sig is None:
             sig = 1
 
-        loglam_norm = loglam_norm * mth.ones(mbh_log10.shape[1])
+        loglam_norm = loglam_norm * mth.ones(mbh_log10.shape[0])
         
         Ploglam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - loglam_norm)**2 / (2 * sig**2)))
         
