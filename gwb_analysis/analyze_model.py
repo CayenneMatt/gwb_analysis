@@ -1603,10 +1603,11 @@ class Model_Info(object):
         dloglam = loglambda_grid[1] - loglambda_grid[0]
         totN = mth.sum(zeta * volume, axis=1, keepdims=True) * dloglam
         plam = zeta / totN
+        plam = mth.where(loglambda_grid < -4, 1e-100, plam)
         norm = mth.sum(plam, axis=1, keepdims=True) * dloglam
         return plam / norm
 
-    def Prob_lam_Inactive(self, loglambda_grid, mbh_log10, loglam_norm=-10, sig=1, mth=None):
+    def Prob_lam_Inactive(self, loglambda_grid, loglam_norm=-10, sig=1, mth=None):
         """
         Eddington ratio distribution function for inactive black holes.
 
@@ -1614,8 +1615,6 @@ class Model_Info(object):
         ----------
         loglambda_grid : array
             Log10 of the Eddington ratio at which to evaluate the probability density function
-        mbh_log10 : array
-            Log10 of the black hole masses at which to evaluate the probability density function, shape should be (n_masses,)
         loglam_norm : float, optional
             Median log10 value of Eddington fraction for the inactive black holes. Default is -10
         sig : float, optional
@@ -1636,16 +1635,14 @@ class Model_Info(object):
         if sig is None:
             sig = 1
 
-        loglam_norm = loglam_norm * mth.ones(mbh_log10.shape[0])
+        loglam_norm *= mth.ones(loglambda_grid.shape[0])
+        Ploglam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - loglam_norm[:,mth.newaxis])**2 / (2 * sig**2)))
         
-        Ploglam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - loglam_norm)**2 / (2 * sig**2)))
-        
-        # return Ploglam / mth.trapz(Ploglam, loglambda_grid)
         dlam = loglambda_grid[1] - loglambda_grid[0]
         norm = mth.sum(Ploglam, axis=1, keepdims=True) * dlam
         return Ploglam / norm
-        
-    def Prob_lam_Fractional(self, loglambda_grid, mbh_log10, Factive, Ploglam_active, loglam_norm=None, sig=None, mth=None):
+            
+    def Prob_lam_Fractional(self, loglambda_grid, Factive, Ploglam_active, loglam_norm=None, sig=None, mth=None):
         """
         Probability of loglambda with two peaks. One peak for active black holes and one peak for inactive black holes.
         The relative contributions of each peak is determined by the active fraction.
@@ -1654,8 +1651,6 @@ class Model_Info(object):
         ----------
         loglambda_grid : array
             Log10 of the Eddington ratio at which to evaluate the probability density function
-        mbh_log10 : array
-            Log10 of the black hole masses at which to evaluate the probability density function, shape should be (n_masses,)
         Factive : float or array
             The active fraction(s)
         Ploglam_active : array
@@ -1672,16 +1667,17 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        Ploglam_inactive = self.Prob_lam_Inactive(loglambda_grid, mbh_log10, mth=mth, loglam_norm=loglam_norm, sig=sig)
+        Factive *= mth.ones(Ploglam_active.shape[0])
+
+        Ploglam_inactive = self.Prob_lam_Inactive(loglambda_grid, mth=mth, loglam_norm=loglam_norm, sig=sig)
     
-        Plam_tot = Ploglam_inactive * (1 - Factive) + Ploglam_active * Factive
+        Plam_tot = Ploglam_inactive * (1 - Factive[:,None]) + Ploglam_active * Factive[:,None]
 
-        # print(np.trapezoid(Plam_tot, loglambda_grid), np.trapezoid(Ploglam_inactive, loglambda_grid), np.trapezoid(Ploglam_active, loglambda_grid))
+        return Plam_tot
+        # dlam = loglambda_grid[1] - loglambda_grid[0]
 
-        # return Plam_tot
-        dlam = loglambda_grid[1] - loglambda_grid[0]
-        norm = mth.sum(Plam_tot, axis=1, keepdims=True) * dlam
-        return Plam_tot / norm
+        # norm = mth.sum(Plam_tot, axis=1, keepdims=True) * dlam
+        # return Plam_tot / norm
 
     
     def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, Pfunc='Shen', facfunc='Interp', mth=None, **kwargs):
@@ -1945,18 +1941,18 @@ class Model_Info(object):
 
 
         if Pfunc == 'Shen':
-            Ploglam = self.Prob_lam_Shen(loglambda_grid, redshift, mth=mth, **kwargs)
+            Ploglam = self.Prob_lam_Shen(loglambda_grid, mbh_log10=mbh_log10, redshift=redshift, mth=mth, **kwargs)
  
         elif Pfunc == 'Aird':
-            Ploglam = self.Prob_lam_Aird(loglambda_grid, redshift, mth=mth, **kwargs)
+            Ploglam = self.Prob_lam_Aird(loglambda_grid, mbh_log10=mbh_log10, redshift=redshift, mth=mth, **kwargs)
 
         elif Pfunc == 'Ananna':
-            Ploglam = self.Prob_lam_Ananna_old(loglambda_grid, redshift, mth=mth, **kwargs)
+            Ploglam = self.Prob_lam_Ananna_old(loglambda_grid, redshift=redshift, mth=mth, **kwargs)
 
         if Fractional == True:
             if facfunc == 'Zou':
                 raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
-            Ploglam = self.Prob_lam_Fractional(loglambda_grid, mbh_log10=mbh_log10, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
+            Ploglam = self.Prob_lam_Fractional(loglambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
             Factive = 1  # This avoids double counting Factive in the integral below
         
         #################################
@@ -2016,24 +2012,6 @@ class Model_Info(object):
 
         if mth is None:
             import numpy as mth
-            
-        if facfunc == 'Zou':
-            Factive = self.facfunc_zou(mbh_log10, redshift)
-
-        elif facfunc == 'Quad':
-            Factive = self.facfunc_quad(redshift)
-        
-        elif facfunc == 'Cube':
-            Factive = self.facfunc_cube(redshift)
-
-        elif facfunc == 'Interp':
-            Factive = self.facfunc_interp(redshift)
-
-        elif facfunc == 'Interp_low':
-            Factive = self.facfunc_interp_low(redshift)
-        
-        elif type(facfunc) != str:
-            Factive = facfunc
 
         #################################
         
@@ -2045,6 +2023,24 @@ class Model_Info(object):
             logM_edd = (logL - loglambda_grid - mth.log10(C_edd))
 
             phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
+
+            if facfunc == 'Zou':
+                Factive = self.facfunc_zou(mbh_log10, redshift)
+
+            elif facfunc == 'Quad':
+                Factive = self.facfunc_quad(redshift)
+            
+            elif facfunc == 'Cube':
+                Factive = self.facfunc_cube(redshift)
+
+            elif facfunc == 'Interp':
+                Factive = self.facfunc_interp(redshift)
+
+            elif facfunc == 'Interp_low':
+                Factive = self.facfunc_interp_low(redshift)
+            
+            elif type(facfunc) != str:
+                Factive = facfunc
 
             if Pfunc == 'Shen':
                 Ploglam = self.Prob_lam_Shen(loglambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
@@ -2058,7 +2054,7 @@ class Model_Info(object):
             if Fractional == True:
                 if facfunc == 'Zou':
                     raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
-                Ploglam = self.Prob_lam_Fractional(loglambda_grid, mbh_log10=logM_edd, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
+                Ploglam = self.Prob_lam_Fractional(loglambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
                 Factive = 1  # This avoids double counting Factive in the integral below
             
             dlam = loglambda_grid[1] - loglambda_grid[0]
