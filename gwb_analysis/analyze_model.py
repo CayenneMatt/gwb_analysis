@@ -1511,12 +1511,11 @@ class Model_Info(object):
             import numpy as mth
 
         linear_lambda_grid = 10**loglambda_grid[mth.newaxis,:]
+        beta = beta * mth.ones(mbh_log10.shape[0])
 
         p_low = (linear_lambda_grid)**gamma1
 
         p_hi = (linear_lambda_grid)**gamma2
-
-        beta = beta * mth.ones(mbh_log10.shape[0])
 
         plam = 10**A * mth.where(loglambda_grid < lambda_break, p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta[:,mth.newaxis]
 
@@ -1564,7 +1563,7 @@ class Model_Info(object):
         norm = mth.sum(plam) * dloglam
         return plam / norm
     
-    def Prob_lam_Ananna(self, loglambda_grid, mbh_log10, redshift, zeta_star=10**-3.64, delta1=0.38, eta_lambda=2.260, m=-0.885, b=6.671, mth=None):
+    def Prob_lam_Ananna(self, loglambda_grid, mbh_log10, redshift, zeta_star=10**-3.64, delta1=0.38, eta_lambda=2.260, beta=3.5, z0=0.6, m=-0.885, b=6.671, mth=None):
         """
         Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 4.
 
@@ -1599,8 +1598,9 @@ class Model_Info(object):
         lambda_star = 10**(mbh_log10 * m + b)  # Default single value is 10**-1.338
         # lambda_star = 10**0.0 * mth.ones(mbh_log10.shape[0])  # No mass dependence version
 
-        zeta = zeta_star / ((linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1) + (linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1 + eta_lambda))
+        zeta = zeta_star * ((1 + redshift)/(1 + z0))**beta / ((linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1) + (linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1 + eta_lambda))
 
+        # zeta *= ((1 + redshift[:,mth.newaxis])/(1 + z0))**beta[:,mth.newaxis]
         volume = cosmo.comoving_volume(redshift).value
         dloglam = loglambda_grid[1] - loglambda_grid[0]
         totN = mth.sum(zeta * volume, axis=1, keepdims=True) * dloglam
@@ -1636,9 +1636,10 @@ class Model_Info(object):
             loglam_norm = -10
         if sig is None:
             sig = 1
+        
 
-        loglam_norm *= mth.ones(loglambda_grid.shape[0])
-        Ploglam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - loglam_norm[:,mth.newaxis])**2 / (2 * sig**2)))
+        lln = mth.ones(loglambda_grid.shape[0]) * loglam_norm
+        Ploglam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - lln[:,mth.newaxis])**2 / (2 * sig**2)))
         
         dlam = loglambda_grid[1] - loglambda_grid[0]
         norm = mth.sum(Ploglam, axis=1, keepdims=True) * dlam
@@ -1669,18 +1670,13 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        Factive *= mth.ones(Ploglam_active.shape[0])
+        F = mth.ones(Ploglam_active.shape[0])*Factive
 
         Ploglam_inactive = self.Prob_lam_Inactive(loglambda_grid, mth=mth, loglam_norm=loglam_norm, sig=sig)
-    
-        Plam_tot = Ploglam_inactive * (1 - Factive[:,None]) + Ploglam_active * Factive[:,None]
+
+        Plam_tot = Ploglam_inactive * (1 - F[:,None]) + Ploglam_active * F[:,None]
 
         return Plam_tot
-        # dlam = loglambda_grid[1] - loglambda_grid[0]
-
-        # norm = mth.sum(Plam_tot, axis=1, keepdims=True) * dlam
-        # return Plam_tot / norm
-
     
     def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, Pfunc='Shen', facfunc='Interp', mth=None, **kwargs):
         """
