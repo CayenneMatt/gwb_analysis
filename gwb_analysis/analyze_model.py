@@ -722,76 +722,6 @@ class Model_Info(object):
         """
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
-
-    def calculate_radiative_efficiency(self, redshift, mbh_log10, step=1e-3, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
-        """
-        Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the
-        luminosity function at the average redshift. This is a rough calculation that assumes that the change in the BHMF and LF between the two redshifts is solely due to accretion
-        and does not consider mergers or other processes that may contribute to the growth of black holes.
-
-        May have bugs, shouldn't be used
-
-        Parameters
-        -----------
-        redshift : float
-            The redshift at which to calculate the radiative efficiency
-        mbh_log10 : array-like
-            The log10 of the black hole masses at which to evaluate the BHMF.
-        step : float, optional
-            The step in redshift to use for calculating the change in the BHMF and LF. Default is 1e-3
-        path_to_shen_fits: str, optional
-            Path to the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
-
-        Returns
-        --------
-        erad : float
-            Radiative efficiency between the two redshifts
-        mdot : float
-            The total integrated mass density gain between those redshifts (scaled)
-        Lum : float
-            The total integrated luminosity at the latter redshift
-
-        .. warning::
-            * Does not incorporate AGN Fraction
-            * Radiative efficiency is a constant here
-            * Need to make sure that it is always integrating over roughly similar mass - luminosity ranges
-            * Integration only cosiders two bins and nothing in between, but should be fine for order of magnitude calculation
-            * May have a volume normalization issue
-
-        """
-        f_obsc = 1/3  # Fraction of AGN that are not obscured and therefore observed in the LF
-        f_acc = 0.9  # Fraction of BH growth due to accretion as opposed to mergers
-        # Get BHMF at each redshift
-        # volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
-
-        z1 = redshift
-        z2 = redshift + step
-
-        dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
-
-        # Mass Function
-        bhmf1 = self.bhmf(mbh_log10, redshift=z1)
-        bhmf2 = self.bhmf(mbh_log10, redshift=z2)
-        
-        mdot = trapz((bhmf1 - bhmf2) * 10**mbh_log10, mbh_log10) * u.Msun / dt * f_obsc / f_acc#/ u.Mpc**3 * volume
-
-        if mdot < 0:
-            print('Warning: Negative mass accreted between z1 = {} and z2 = {} for model {}.'.format(np.round(z1, 2), np.round(z2, 2), self.model_name))
-
-        # Luminosity Function
-
-        shen_fit = self.get_shenf(redshift, path_to_shen_fits)
-        phiL = 10**(shen_fit[1])
-        logL = shen_fit[0]
-
-        Lum = trapz((phiL) * 10**logL, logL) * u.erg / u.s #/ u.Mpc**3 * volume
-
-        # Radiative Efficiency Calculation
-
-        erad = Lum / (mdot * c.c**2)
-        # erad = mdot
-
-        return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
     def facfunc_zou(self, mbh_log10, redshift, facmin=0.00001):
         """
@@ -969,469 +899,6 @@ class Model_Info(object):
             if Factive < facmin:
                 Factive = facmin
         return Factive
-
-    def bhmf_from_gsmf(self, mstar_log10, mbh_log10, redshift):
-        """
-        Like bhmf_conv in holodeck except this starts with a GSMF and the convolution is done via dot product
-
-        Parameters
-        ----------
-        mstar_log10 : array-like
-            Log10 of stellar mass in solar masses at which to evaluate the BHMF
-        mbh_log10 : array-like
-            Log10 of black hole mass in solar masses at which to evaluate the BHMF
-        redshift : float
-            Redshift at which to evaluate the BHMF
-       
-        Returns
-        -------
-        bhmf_conv : array-like
-            The black hole mass function at the given redshift calculated from the GSMF and MMBulge relation
-        """
-        ndens = self.gsmf(mstar_log10, redshift=redshift)
-
-        scatter = np.log10(10**self.params['mmb_scatter_dex'] * (1.0 + redshift)**self.params['mmb_zplaw_scatter'])
-
-        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**self.params['mmb_zplaw_amp']
-
-        mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
-
-        logMbh_mean = np.log10(mamp_z) + mplaw_z * (mstar_log10 - 11.0)
-
-        inv_sqrt2pi = 1.0 / np.sqrt(2*np.pi)
-        K = inv_sqrt2pi/scatter * np.exp( -0.5*((mbh_log10[:, None] - logMbh_mean)/scatter)**2)
-
-        dlogM = mbh_log10[1] - mbh_log10[0]
-        bhmf_conv = np.dot(K, ndens) * dlogM
-
-        return bhmf_conv
-    
-    def bhar_gal(self, mbh_log10, redshift, mth=None):
-        """
-        Calculate black hole accretion rate as a function of black hole mass and redshift using the MMBulge relation and the GSMF.
-
-        The function in the paper is in terms of stellar mass, but we can use the MMBulge relation to convert it to a function of black hole mass.
-        Fit from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
-        
-        Msun / year
-        Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)
-
-        Parameters
-        ----------
-        mbh_log10 : array-like
-            Log10 of black hole mass in solar masses at which to evaluate the BHAR
-        redshift : float
-            Redshift at which to evaluate the BHAR
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-
-        Returns
-        -------
-        bhar : array-like
-            log10 black hole accretion rate in Msun / year as a function of black hole mass and redshift
-        """
-        if mth is None:
-            import numpy as mth
-        
-        mamp_z = 10**self.params['mmb_mamp_log10'] * (1.0 + redshift)**self.params['mmb_zplaw_amp']
-        mplaw_z = self.params['mmb_plaw'] * (1.0 + redshift)**self.params['mmb_zplaw_slope']
-
-        mstar_log10 = (mbh_log10 - mth.log10(mamp_z)) / mplaw_z + 11
-
-        c, k, b = 2.53850958, 0.85309541, -18.35185436
-        intercept = c * (1 - mth.exp(-k * redshift)) + b
-
-        return 1.3595507359218555 * mstar_log10 + intercept
-
-    def bhar_bondi(self, mbh_log10, rho=0.1, cs=100, mth=None):
-        """
-        Calculate black hole accretion rate from bondi accretion.
-
-        Msun / year
-        Error ranges from 0.1 - 0.3 dex depending on redshift and mass (see Figure 6)
-
-        Parameters
-        ----------
-        mbh_log10 : array-like
-            Log10 of black hole mass in solar masses at which to evaluate the BHAR
-        rho : float
-            Density of the gas in the vicinity of the black hole, in units of g / cm^3, Default is 0.1
-        cs : float
-            Sound speed of the gas in the vicinity of the black hole, in units of km/s, Default is 100
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-
-        Returns
-        -------
-        bhar : array-like
-            Black hole accretion rate in g / s as a function of black hole mass and redshift
-        """
-        if mth is None:
-            import numpy as mth
-        
-        mp = 1.6726e-24  # mass of proton in grams
-        
-        bhar = 4 * mth.pi * (NWTG * 10**mbh_log10 * MSOL )**2 * rho * mp / (cs * KMPERSEC)**3 # in grams / second
-
-        return bhar
-    
-    def eta_from_mbh_davis(self, mbh_log10):
-        """
-        Calulate radiative efficiency as a function of black hole mass using the fit from `Davis & Laor (2011) <https://ui.adsabs.harvard.edu/abs/2011ApJ...728...98D/abstract>`_.
-
-        Parameters 
-        ----------
-        mbh_log10 : array-like
-            Log10 of black hole mass in solar masses
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-        
-        Returns
-        -------
-        etas : array-like
-            Radiative efficiency as a function of black hole mass
-        """
-
-        etas = 0.089 * (10**mbh_log10/ 1e8)**0.52
-        return etas
-    
-    def eta_from_mbh_line(self, mbh_log10, mth=None):
-        """
-        Calculate radiative efficiency as a function of black hole mass using the a line fit to the data from
-        `Li et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract>`_. Two lines of different slopes with a cutoff.
-
-        .. caution::
-            Not advised to use for redshifts below 0.8.
-
-        Parameters
-        ----------
-        mbh_log10 : array-like
-            Log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-
-        Returns
-        -------
-        etas : array-like
-            Radiative efficiency as a function of black hole mass
-        """
-
-        # if mth is None:
-        #     import numpy as mth
-
-        m = 0.24675530275901314
-        b = -1.4300561796413318
-
-        etas = m*mbh_log10 + b
-
-        y1 = 0
-        y2 = etas[mbh_log10 <= 7][-1]
-
-        x1 = 1
-        x2 = 7
-        etas[mbh_log10 <= 7] = (y2 - y1) / (x2 - x1) * (mbh_log10[mbh_log10 <= 7] - x1) + y1
-
-        return etas
-
-    def eta_from_mbh_logistic(self, mbh_log10, min=0.001, k=-1.4, m0=9.7, mth=None):
-        """
-        Calulate radiative efficiency as a function of black hole mass a logistic fit to the data from `Li et al. (2012) <https://ui.adsabs.harvard.edu/abs/2012ApJ...749..187L/abstract>`_. No redshift dependence.
-        
-        .. tip::
-            Use m0 = 8.4 for a smoother transition between high and low values of radiative efficiency.
-
-        .. caution::
-            Not advised to use for redshifts below 0.8.
-
-        Parameters 
-        ----------
-        mbh_log10 : array-like
-            Log10 of black hole mass in solar masses at which to evaluate the radiative efficiency 
-        min : float, optional
-            Minimum value of the logistic function, default is 0.001. Default is 0.001
-        k : float, optional
-            Stepth of the logistic function. Default is -1.4
-        m0 : float, optional
-            The value of mbh_log10 at which the logistic function is halfway between its minimum and maximum values. Default is 9.7
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-
-        
-        Returns
-        -------
-        etas : array-like
-            Radiative efficiency as a function of black hole mass
-        """
-
-        if mth is None:
-            import numpy as mth
-
-        l = 1.0 - min
-        return l / (1 + mth.exp(k * (mbh_log10 - m0))) + min
-    
-
-    def L_from_Mbh_via_mdot_eta_func(self, mbh_log10, lums_log10, redshift, ndens=None, scatter=None, eta_func = 'Davis', rad_eff=None, facfunc='Zou', mdot_func='Gal', mth=None):
-        """
-        Calculate luminosity from black hole mass using the accretion rate and radiative efficiency.
-        The accretion rate is calculated using the MMBulge relation and the GSMF, and the radiative efficiency is calculated using one of several functions of black hole mass.
-
-        Parameters
-        -----------
-        mbh_log10 : array
-            Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
-        lums_log10 : array
-            Array of log10 luminosities at which to evaluate the luminosity function
-        redshift : float
-            Redshift at which to evaluate the luminosity function
-        ndens : array, optional
-            Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.
-        eta_func : bool, optional
-            Which functional form to use for calculating radiative efficiency,
-            options are 'Davis', 'Logistic', 'Line', and 'Constant'. Default is 'Davis'
-        rad_eff : float, optional
-            The constantvalue of the radiative efficiency to use when eta_func is 'Constant'. Default is None
-        facfunc : bool, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'.
-        mdot_func : bool, optional
-            Which functional form to use for calculating accretion rate, options are 'Gal', 'Bondi', and 'Lambda'. Default is 'Gal'.
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-
-
-        Returns
-        --------
-        lf_conv : array
-            The luminosity function calculated from the black hole mass function, accretion rate,
-            and radiative efficiency
-        
-        Raises
-        ------
-        ValueError
-            If eta_func is 'Constant' and rad_eff is not provided, a ValueError is raised.
-        """
-
-        if mth is None:
-            import numpy as mth
-
-        if scatter is None:
-            scattereta = 0.5
-            scattermdotmstar = 0.3
-
-            scattermmb = mth.log10(10**self.params['mmb_scatter_dex'] * (1.0 + redshift)**self.params['mmb_zplaw_scatter'])
-            scatter = mth.sqrt(scattermmb**2 + scattereta**2 + scattermdotmstar**2)
-
-        if eta_func == 'Davis':
-            etas = self.eta_from_mbh_davis(mbh_log10)
-            etas = mth.clip(etas, 0.001, 1.0)
-
-        elif eta_func == 'Logistic':
-            etas = self.eta_from_mbh_logistic(mbh_log10, mth=mth)
-            etas = mth.clip(etas, 0.001, 1.0)
-        
-        elif eta_func == 'Line':
-            etas = self.eta_from_mbh_line(mbh_log10, mth=mth)
-            etas = mth.clip(etas, 0.001, 1.0)
-        
-        elif eta_func == 'Constant':
-            if rad_eff is not None:
-                etas = rad_eff
-            else:
-                raise ValueError("Please provide a radiative efficiency value.")
-            
-        if mdot_func == 'Gal':   
-            Mdot_mean = 10**self.bhar_gal(mbh_log10, redshift, mth=mth) * 6.3008906592961785e+25 / 0.1  # Msun / year to g / s
-
-        if mdot_func == 'Bondi':
-            Mdot_mean = self.bhar_bondi(mbh_log10, mth=mth)  # to g / s
-
-        elif mdot_func == 'Lambda':
-            # Not reliable, just for testing
-            lambda_Edd = 0.1
-            Mdot_mean = 2.2 * 10**mbh_log10 / 1e8 * 6.3008906592961785e+25 * lambda_Edd
-        
-        Lmean_log10 = mth.log10(Mdot_mean * (2.9979246e10)**2 * etas)
-
-        inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
-        K = inv_sqrt2pi/scatter * mth.exp( -0.5*((lums_log10[:, None] - Lmean_log10)/scatter)**2)
-
-        if facfunc == 'Zou':
-            Factive = self.facfunc_zou(mbh_log10, redshift)
-
-        elif facfunc == 'Quad':
-            Factive = self.facfunc_quad(redshift)
-
-        elif facfunc == 'Cube':
-            Factive = self.facfunc_cube(redshift)
-
-        if ndens is None:
-            ndens = self.bhmf(mbh_log10, redshift=redshift)
-
-        dlogM = mbh_log10[1] - mbh_log10[0]
-        lf_conv = mth.dot(K, ndens * Factive) * dlogM
-
-        return lf_conv
-
-    def loglamM_func(self, mbh_log10, knee, norm, slope, lowlam=-15, hilam=15, mth=None):
-        """
-        Calculate Eddington fraction as a function of mass. Schechter function
-
-        Parameters
-        ----------
-        mbh_log10 : array
-            Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
-        knee : float
-            The turnover point of the Schechter function
-        norm : float
-            The normalization of the Schechter function
-        slope : float
-            The slope of the Schechter function
-        lowlam : float
-            Lower limit of allowable Eddington ratios
-        hilam : float
-            Upper limit of allowable Eddington ratios
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-
-        Returns
-        -------
-        loglam_M : array
-            Log10 of the Eddington fraction as a function of black hole mass clipped to be between lowlam and hilam for numerical reasons.
-        """
-        if mth is None:
-            import numpy as mth
-        rat = mbh_log10 - knee
-        loglam_M = np.log10(mth.log(10) * 10**norm * 10**((rat)*(slope+1)) * mth.exp(-10**rat))
-        loglam_M = mth.clip(loglam_M, lowlam, hilam)
-        return loglam_M
-    
-    def loglamM_func_shen(self, mbh_log10, a=0.469, b=-22.46, mth=None):
-        """
-        Calculate Eddington fraction as a function of mass. Rearranged version of the fit to the log lambda - log L relation used in `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ equation 29. Was calibrated at z ~ 1.4 and has scatter of 0.4 dex
-
-        Parameters
-        ----------
-        mbh_log10 : array
-            Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
-        knee : float
-            The turnover point of the Schechter function
-        norm : float
-            The normalization of the Schechter function
-        slope : float
-            The slope of the Schechter function
-        lowlam : float
-            Lower limit of allowable Eddington ratios
-        hilam : float
-            Upper limit of allowable Eddington ratios
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-
-        Returns
-        -------
-        loglam_M : array
-            Log10 of the Eddington fraction as a function of black hole mass
-        """
-        if mth is None:
-            import numpy as mth
-
-        loglam_M = (b + a * mth.log10(10**mbh_log10 * C_edd)) / (1 - a)
-        return loglam_M
-    
-    def loglamL_func_shen(self, lum_log10, a=0.469, b=-22.46, mth=None):
-        """
-        Calculate Eddington fraction as a function of luminosity. Based on the fit to the log lambda - log L relation used in `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ equation 29. Was calibrated at z ~ 1.4 and has scatter of 0.4 dex
-
-        Parameters
-        ----------
-        lum_log10 : array
-            Luminosities to evaluate the luminosity function at, in log10(L/erg/s)
-        a : float
-            Slope of the log lambda - log L relation. Default is 0.469.
-        b : float
-            Intercept of the log lambda - log L relation. Default is -22.46.
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-
-        Returns
-        -------
-        loglam_L : array
-            Log10 of the Eddington fraction as a function of luminosity
-        """
-        if mth is None:
-            import numpy as mth
-
-        loglam_L = a * lum_log10 + b
-        return loglam_L
-
-    def L_from_Mbh_via_lambda(self, mbh_log10, knee, norm, slope, sigma_loglam, redshift, logL_grid, ndens=None, loglam_func='Schechter', facfunc='Zou', lowlam=-15, hilam=11, mth=None):
-        """
-        Calculate AGN luminosity function by convolving black hole mass function with an Eddington ratio distribution function
-
-        Parameters
-        ----------
-        mbh_log10 : array
-            Black hole masses to evaluate the luminosity function at, in log10(Mbh/Msol)
-        knee : float
-            The turnover point of the Schechter function
-        norm : float
-            The normalization of the Schechter function
-        slope : float
-            The slope of the Schechter function
-        sigma_loglam : float
-            The scatter in log lambda at fixed black hole mass, which is assumed to be Gaussian
-        redshift : float
-            Redshift at which to evaluate the luminosity function
-        logL_grid : array
-            The grid of log luminosities at which to evaluate the luminosity function
-        ndens : array, optional
-            Number density of black holes at the given masses and redshift. If not provided, it will be calculated using the bhmf function. Default is None.
-        loglam_func : str, optional
-            Which functional form to use for calculating the mean log lambda as a function of black hole mass, options are 'Schechter' and 'Line'. Default is 'Schechter'
-        facfunc : str or int, optional
-            Which functional form to use for calculating the AGN fraction as a function of black hole mass and redshift, options are 'Zou', 'Quad', and 'Cube'. Default is 'Zou'
-        lowlam : float
-            Lower limit of allowable Eddington ratios
-        hilam : float
-            Upper limit of allowable Eddington ratios
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-
-        Returns
-        -------
-        lum_func : array
-            The luminosity function calculated from the black hole mass function and Eddington ratio distribution function
-        """
-
-        if mth is None:
-            import numpy as mth
-
-        logC = np.log10(C_edd)
-
-        if facfunc == 'Zou':
-            Factive = self.facfunc_zou(mbh_log10, redshift)
-
-        elif facfunc == 'Quad':
-            Factive = self.facfunc_quad(redshift)
-        
-        elif facfunc == 'Cube':
-            Factive = self.facfunc_cube(redshift)
-        
-        if loglam_func == 'Schechter':
-            loglam_M = self.loglamM_func(mbh_log10, knee, norm, slope, lowlam=lowlam, hilam=hilam, mth=mth) # Schechter in mbh_log10
-
-        elif loglam_func == 'Line':
-            loglam_M = self.loglamM_func_shen(mbh_log10, mth=mth) # Linear in mbh_log10
-
-        mean_L_at_M = mbh_log10[None, :] + logC + loglam_M
-        inv_sqrt2pi = 1.0 / mth.sqrt(2*mth.pi)
-        K = inv_sqrt2pi/sigma_loglam * mth.exp(-0.5*((logL_grid[:, None] - mean_L_at_M)/sigma_loglam)**2) # ERDF is gaussian in logL at fixed mbh_log10, so this is the probability of logL given mbh_log10
-
-        dlogM = mbh_log10[1] - mbh_log10[0]
-
-        if ndens is None:
-            ndens = self.bhmf(mbh_log10, redshift=redshift)
-
-        lum_func = mth.dot(K, ndens * Factive) * dlogM
-        return lum_func
     
     def Prob_lam_Shen(self, loglambda_grid, mbh_log10, redshift, alpha=-0.6, lam1=1.5, mth=None):
         """
@@ -1511,67 +978,31 @@ class Model_Info(object):
             import numpy as mth
 
         linear_lambda_grid = 10**loglambda_grid[mth.newaxis,:]
+        beta = beta * mth.ones(mbh_log10.shape[0])
 
         p_low = (linear_lambda_grid)**gamma1
 
         p_hi = (linear_lambda_grid)**gamma2
 
-        beta = beta * mth.ones(mbh_log10.shape[0])
-
         plam = 10**A * mth.where(loglambda_grid < lambda_break, p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta[:,mth.newaxis]
 
-        # plam = mth.where(loglambda_grid < -4, 1e-15, plam)
-
-        dlam = loglambda_grid[1] - loglambda_grid[0]
-        norm = mth.sum(plam, axis=1, keepdims=True) * dlam
-        return plam / norm
-
-    def Prob_lam_Ananna_old(self, loglambda_grid, redshift, zeta_star=10**-3.64, lambda_star=10**-1.338, delta1=0.38, eta_lambda=2.260, mth=None):
-        """
-        Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 4.
-
-        Parameters
-        ----------
-        loglambda_grid : array
-            Log10 of the Eddington ratio at which to evaluate the probability density function
-        zeta_star : float
-            Normalization of the distribution function
-        lambda_star : float
-            Characteristic Eddington ratio at which the power law component turns over. Default is -1.338
-        delta1 : float
-            Power law slope at low Eddington ratios. Default is 0.38
-        eta_lambda : float
-            Parameter controlling the steepness of the exponential cutoff at high Eddington ratios. Default is 2.260
-        mth : module, optional
-            Module to use for mathematical functions. Default is None.
-
-        Returns
-        -------
-        prob : array
-            The probability density function of lambda at the given redshift, evaluated at the input log lambda values. Shape is (n_masses, n_loglambda_grid)
-        """
-        if mth is None:
-            import numpy as mth
-
-        linear_lambda_grid = 10**loglambda_grid
-
-        zeta = zeta_star / ((linear_lambda_grid / lambda_star)**(delta1) + (linear_lambda_grid / lambda_star)**(delta1 + eta_lambda))
-
-        volume = cosmo.comoving_volume(redshift).value
-        dloglam = loglambda_grid[1] - loglambda_grid[0]
-        totN = mth.sum(zeta * volume) * dloglam
-        plam = zeta / totN
-        norm = mth.sum(plam) * dloglam
+        # dlam = loglambda_grid[1] - loglambda_grid[0]
+        # norm = mth.sum(plam, axis=1, keepdims=True) * dlam
+        norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (loglambda_grid[1:] - loglambda_grid[:-1]), axis=1, keepdims=True)
         return plam / norm
     
-    def Prob_lam_Ananna(self, loglambda_grid, mbh_log10, redshift, zeta_star=10**-3.64, delta1=0.38, eta_lambda=2.260, m=-0.885, b=6.671, mth=None):
+    def Prob_lam_Ananna(self, linear_lambda_grid, dloglam, mbh_log10, delta1=0.38, eta_lambda=2.260, m=-0.885, b=6.671, mth=None):
         """
         Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 4.
 
         Parameters
         ----------
-        loglambda_grid : array
-            Log10 of the Eddington ratio at which to evaluate the probability density function
+        linear_lambda_grid : array
+            The Eddington ratio at which to evaluate the probability density function
+        redshift : float
+            Redshift at which to evaluate the probability density function
+        volume : float
+            Comoving volume at the given redshift
         mbh_log10 : array
             Log10 of the black hole masses at which to evaluate the probability density function, shape should be (n_masses,)
         zeta_star : float
@@ -1595,18 +1026,53 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        linear_lambda_grid = 10**loglambda_grid
         lambda_star = 10**(mbh_log10 * m + b)  # Default single value is 10**-1.338
-        # lambda_star = 10**0.0 * mth.ones(mbh_log10.shape[0])  # No mass dependence version
 
-        zeta = zeta_star / ((linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1) + (linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis])**(delta1 + eta_lambda))
+        ratio = linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis]
 
-        volume = cosmo.comoving_volume(redshift).value
-        dloglam = loglambda_grid[1] - loglambda_grid[0]
-        totN = mth.sum(zeta * volume, axis=1, keepdims=True) * dloglam
-        plam = zeta / totN
-        plam = mth.where(loglambda_grid < -4, 1e-100, plam)
+        plam = 1 / (ratio**delta1 * (1 + ratio**eta_lambda))
+
+        # plam = mth.where(linear_lambda_grid < 0.0001, 1e-100, plam)
         norm = mth.sum(plam, axis=1, keepdims=True) * dloglam
+        # norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=1, keepdims=True)
+        return plam / norm
+    
+    def Prob_lam_Three(self, linear_lambda_grid, mbh_log10, redshift, alpha=1, beta=-0.65, gamma=-2.1, lam1=10**-4, lam2=10**0, mth=None):
+        """
+        Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
+        equation 1, has overal scatter of 0.38 dex. Individual reported uncertainties on input parameters are indicated below.
+
+        Parameters
+        ----------
+        loglambda_grid : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function
+        mbh_log10 : array
+            Log10 of the black hole masses at which to evaluate the probability density function, shape should be (n_masses,)
+        redshift : float
+            Redshift at which to evaluate the probability density function
+        mth : module, optional
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
+        
+        Returns
+        -------
+        prob : array
+            The probability density function of lambda at the given redshift, evaluated at the input log lambda values. Shape is (n_masses, n_loglambda_grid)
+        """
+        if mth is None:
+            import numpy as mth
+
+        beta = beta * mth.ones(mbh_log10.shape[0])
+
+        p_low = lam1**(beta-alpha) * (linear_lambda_grid[mth.newaxis,:])**alpha
+
+        p_mid = (linear_lambda_grid[mth.newaxis,:])**beta[:,mth.newaxis]
+
+        p_hi = lam2**(beta-gamma) * linear_lambda_grid[mth.newaxis,:]**gamma
+
+        plam_temp = mth.where(linear_lambda_grid < lam1, p_low, p_mid)
+        plam = mth.where(linear_lambda_grid < lam2, plam_temp, p_hi)
+
+        norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=1, keepdims=True)
         return plam / norm
 
     def Prob_lam_Inactive(self, loglambda_grid, loglam_norm=-10, sig=1, mth=None):
@@ -1636,13 +1102,12 @@ class Model_Info(object):
             loglam_norm = -10
         if sig is None:
             sig = 1
-
-        loglam_norm *= mth.ones(loglambda_grid.shape[0])
-        Ploglam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - loglam_norm[:,mth.newaxis])**2 / (2 * sig**2)))
         
-        dlam = loglambda_grid[1] - loglambda_grid[0]
-        norm = mth.sum(Ploglam, axis=1, keepdims=True) * dlam
-        return Ploglam / norm
+        lln = mth.ones(loglambda_grid.shape[0]) * loglam_norm
+        plam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - lln[:,mth.newaxis])**2 / (2 * sig**2)))
+        
+        norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (loglambda_grid[1:] - loglambda_grid[:-1]), axis=1, keepdims=True)
+        return plam / norm
             
     def Prob_lam_Fractional(self, loglambda_grid, Factive, Ploglam_active, loglam_norm=None, sig=None, mth=None):
         """
@@ -1669,317 +1134,13 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        Factive *= mth.ones(Ploglam_active.shape[0])
+        F = mth.ones(Ploglam_active.shape[0])*Factive
 
         Ploglam_inactive = self.Prob_lam_Inactive(loglambda_grid, mth=mth, loglam_norm=loglam_norm, sig=sig)
-    
-        Plam_tot = Ploglam_inactive * (1 - Factive[:,None]) + Ploglam_active * Factive[:,None]
+
+        Plam_tot = Ploglam_inactive * (1 - F[:,None]) + Ploglam_active * F[:,None]
 
         return Plam_tot
-        # dlam = loglambda_grid[1] - loglambda_grid[0]
-
-        # norm = mth.sum(Plam_tot, axis=1, keepdims=True) * dlam
-        # return Plam_tot / norm
-
-    
-    def PhiL_to_PhiM_erdf(self, L_grid, phiL, Mbh_grid, loglambda_grid, redshift, Pfunc='Shen', facfunc='Interp', mth=None, **kwargs):
-        """
-        Compute black hole mass function from luminosity function using an Eddington ratio distribution function.
-
-        Parameters
-        ----------
-        L_grid : array
-            Grid of luminosities at which the luminosity function is evaluated
-        phiL : array
-            Luminosity function evaluated at L_grid, in units of Mpc^-3 dex^-1
-        Mbh_grid : array
-            Grid of black hole masses at which to evaluate the black hole mass function
-        loglambda_grid : array
-            Grid of log Eddington ratios at which the probability density function is evaluated
-        redshift : float
-            Redshift at which to evaluate the black hole mass function
-        Pfunc : str, optional
-            Which functional form to use for calculating the probability density function of log lambda, options are 'Shen' and 'Aird'. Default is 'Shen'.
-        facfunc : str or int, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', 'Interp' and 'Interp_low'. Default is 'Interp'.
-        mth : module, optional
-            Module to use for mathematical functions. Default is None which sets mth = numpy.
-        kwargs : optional
-            Input parameters for the probability density function of log lambda
-
-        Returns
-        -------
-        Phi_M : array
-            Black hole mass function
-        """
-
-        print('Warning: This funciton is depricated and will be removed in a future version!')
-
-        if mth is None:
-            import numpy as mth
-
-        dlogL = mth.log10(L_grid)[1] - mth.log10(L_grid)[0]
-
-        Phi_M = mth.zeros_like(Mbh_grid)
-
-        if Pfunc == 'Shen':
-            Ploglam = self.Prob_lam_Shen(loglambda_grid, redshift, mth=mth, **kwargs)
- 
-        elif Pfunc == 'Aird':
-            Ploglam = self.Prob_lam_Aird(loglambda_grid, redshift, mth=mth, **kwargs)
-        
-        elif Pfunc == 'Ananna':
-            Ploglam = self.Prob_lam_Ananna(loglambda_grid, redshift, mth=mth, **kwargs)
-
-        if facfunc == 'Zou':
-            Factive = self.facfunc_zou(mth.log10(Mbh_grid), redshift)
-
-        elif facfunc == 'Quad':
-            Factive = self.facfunc_quad(redshift)
-        
-        elif facfunc == 'Cube':
-            Factive = self.facfunc_cube(redshift)
-
-        elif facfunc == 'Interp':
-            Factive = self.facfunc_interp(redshift)
-
-        elif facfunc == 'Interp_low':
-            Factive = self.facfunc_interp_low(redshift)
-
-        elif type(facfunc) != str:
-            Factive = facfunc
-
-        for i, M in enumerate(Mbh_grid):
-            lam = L_grid / (C_edd * M)
-            loglam = mth.log10(lam)
-
-            P_interp = np.interp(loglam, loglambda_grid, Ploglam,
-                                left=0.0, right=0.0)
-
-            Phi_M[i] = mth.sum(P_interp * phiL * dlogL / Factive / mth.log(10))
-
-        return Phi_M
-
-    def PhiL_to_PhiM_conv(self, lum_log10, phiL, mbh_log10, sigma, redshift, loglam_func='Shen', facfunc='Interp', mth=None, **kwargs):
-        """
-        Convert a luminosity function into a mass function following the 'convolution' method from `Shen et al. (2020) <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`.
-
-        Parameters
-        ----------
-        lum_log10 : array
-            Grid of log luminosities at which the luminosity function is evaluated
-        phiL : array
-            Luminosity function evaluated at lum_log10, in units of Mpc^-3 dex^-1
-        mbh_log10 : array
-            Grid of log black hole masses at which to evaluate the black hole mass function
-        sigma : float
-            Scatter in log lambda at fixed black hole mass, assumed to be Gaussian
-        redshift : float
-            Redshift at which to evaluate the black hole mass function
-        loglam_func : str, optional
-            Which functional form to use for calculating mean log lambda as a function of black hole mass, 'Shen' is currently the only option. Default is 'Shen'.
-        facfunc : str or int, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube' 'Interp', and 'Interp_low'. Default is 'Interp'.
-        mth : module, optional
-            Module to use for mathematical functions. Default is None which sets mth = numpy.
-        kwargs : float, optional
-            Values of the parameters to be passed into the Eddington fraction function.
-
-        Returns
-        -------
-        Phi_M : array
-            Black hole mass function
-        """
-
-        if mth is None:
-            import numpy as mth
-
-        logC = mth.log10(C_edd)  # in dex
-
-        dlogL = lum_log10[1] - lum_log10[0]
-
-        logL_2d = lum_log10[:, None]  # axis 0: L
-
-        if loglam_func == 'Shen':
-            loglam = self.loglamL_func_shen(logL_2d, mth=mth, **kwargs)
-
-        if facfunc == 'Zou':
-            Factive = self.facfunc_zou(mbh_log10, redshift)
-
-        elif facfunc == 'Quad':
-            Factive = self.facfunc_quad(redshift)
-
-        elif facfunc == 'Cube':
-            Factive = self.facfunc_cube(redshift)
-
-        elif facfunc == 'Interp':
-            Factive = self.facfunc_interp(redshift)
-
-        elif facfunc == 'Interp_low':
-            Factive = self.facfunc_interp_low(redshift)
-
-        elif type(facfunc) != str:
-            Factive = facfunc
-
-        mean_logM_at_L = logL_2d - loglam - logC
-
-        # gaussian kernel in dex units
-        inv_sqrt2pi = 1.0 / mth.sqrt(2.0 * mth.pi)
-        exponent = -0.5 * ((mbh_log10 - mean_logM_at_L) / sigma)**2
-        K = inv_sqrt2pi / sigma * mth.exp(exponent)  # units: 1/dex
-
-        phiM = mth.dot(phiL / Factive, K) * dlogL # result shape (nM,)  in Mpc^-3 dex^-1
-
-        return phiM
-    
-    def PhiM_to_PhiL_erdf_Shan(self, lum_log10, mbh_log10, loglambda_grid, redshift, N0, alpha, beta, mbh_star, mth=None):
-        """
-        Implementation of equation A2 in `Shankar et al (2013) <https://ui.adsabs.harvard.edu/abs/2013MNRAS.428..421S/abstract>`_ to calculate the luminosity
-        function from the number of active black holes convolved with an Eddington ratio distribution funciton.
-
-        Parameters
-        ----------
-        lum_log10 : array
-            Log10 of luminosities at which to evaluate the luminosity function
-        mbh_log10 : array
-            Log10 of black hole masses in solar masses at which to evaluate the luminosity function
-        loglambda_grid : array
-            Grid of log Eddington ratios at which the Eddington ratio distribution function is evaluated
-        redshift : float
-            Redshift at which to evaluate the luminosity function
-        N0 : float
-            Normalization of the active fraction function
-        alpha : float
-            Low-mass slope of the active fraction function
-        beta : float
-            High-mass slope of the active fraction function
-        mbh_star : float
-            Characteristic black hole mass of the active fraction function
-        mth : module, optional
-            Module to use for mathematical functions, default is numpy.
-       
-        Returns
-        -------
-        Phi_L : array
-            Luminosity funciton
-        """
-        if mth is None:
-            import numpy as mth
-
-        dlogM = mth.log10(mbh_log10)[1] - mth.log10(mbh_log10)[0]
-
-        phiL = mth.zeros_like(lum_log10)
-
-        Ploglam = self.Prob_lam_Shen(loglambda_grid, redshift)
-
-        Factive = self.facfunc_shan(mbh_log10, N0=N0, alpha=alpha, beta=beta, mbh_star=mbh_star)
-
-        try:
-            for i, L in enumerate(lum_log10):
-                loglam =  L - mbh_log10 - mth.log10(C_edd)
-                P_interp = mth.interp(loglam, loglambda_grid, Ploglam, left=0.0, right=0.0)
-
-                phiL[i] = mth.sum(P_interp * Factive * dlogM / mth.log(10))
-        except:
-            for i, L in enumerate(lum_log10):
-                loglam =  L - mbh_log10 - mth.log10(C_edd)
-                P_interp = mth.interp(loglam, loglambda_grid, Ploglam, left=0.0, right=0.0)
-
-                phiL = mth.set_subtensor(phiL[i], mth.sum(P_interp * Factive * dlogM / mth.log(10)))
-
-        return phiL
-    
-    def PhiM_to_PhiL_erdf_old(self, mbh_log10, phiM, redshift, logL_grid, loglambda_grid, Pfunc='Shen', Fractional=False, facfunc='Interp', mth=None, loglam_norm=None, sig=None, **kwargs):
-        """
-        Convert a BH mass function into an AGN luminosity function.
-
-        Parameters
-        ----------
-        mbh_log10 : array
-            log10(M_BH / Msun)
-        phiM : array
-            Phi_BH(logM)
-        logL_grid : array
-            log10(Lbol / erg s^-1)
-        loglambda_grid : array
-            log10(Eddington ratio grid)
-        Pfunc : str or float
-            Function to use for the ERDF, options are 'Shen' and 'Aird'. Default is 'Shen'.
-        Fractional : bool, optional
-            Flag for how to use the active fraction. Default is False.
-        facfunc : str or int, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube', 'Interp', and 'Interp_low'. Default is 'Interp'.
-        mth : module, optional
-            Module to use for mathematical functions. Default is None which sets mth = numpy.
-        kwargs : optional
-            Input parameters for the probability density function of log lambda
-
-        Returns
-        -------
-        phiL : array
-            The number density per unit log luminosity for the AGN luminosity function
-        """
-
-        if mth is None:
-            import numpy as mth
-
-        if facfunc == 'Zou':
-            Factive = self.facfunc_zou(mbh_log10, redshift)
-
-        elif facfunc == 'Quad':
-            Factive = self.facfunc_quad(redshift)
-        
-        elif facfunc == 'Cube':
-            Factive = self.facfunc_cube(redshift)
-
-        elif facfunc == 'Interp':
-            Factive = self.facfunc_interp(redshift)
-
-        elif facfunc == 'Interp_low':
-            Factive = self.facfunc_interp_low(redshift)
-        
-        elif type(facfunc) != str:
-            Factive = facfunc
-
-
-        if Pfunc == 'Shen':
-            Ploglam = self.Prob_lam_Shen(loglambda_grid, mbh_log10=mbh_log10, redshift=redshift, mth=mth, **kwargs)
- 
-        elif Pfunc == 'Aird':
-            Ploglam = self.Prob_lam_Aird(loglambda_grid, mbh_log10=mbh_log10, redshift=redshift, mth=mth, **kwargs)
-
-        elif Pfunc == 'Ananna':
-            Ploglam = self.Prob_lam_Ananna_old(loglambda_grid, redshift=redshift, mth=mth, **kwargs)
-
-        if Fractional == True:
-            if facfunc == 'Zou':
-                raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
-            Ploglam = self.Prob_lam_Fractional(loglambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
-            Factive = 1  # This avoids double counting Factive in the integral below
-        
-        #################################
-        
-        phiL = mth.zeros_like(logL_grid)
-
-        phiL_list = []
-
-        for logL in logL_grid:
-            logM_edd = (logL - loglambda_grid - mth.log10(C_edd))
-
-            phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
-
-            if facfunc == 'Zou' and Fractional != True:
-                Factive = mth.interp(logM_edd, mbh_log10, Factive, left=0.0, right=mth.nanmax(Factive))
-            else:
-                Factive = Factive
-
-            dlam = loglambda_grid[1] - loglambda_grid[0]
-
-            integrand = mth.sum(phiM_interp * Ploglam * Factive) * dlam
-            phiL_list.append(integrand)
-
-        phiL = mth.stack(phiL_list)
-        return phiL
 
     def PhiM_to_PhiL_erdf(self, mbh_log10, phiM, redshift, logL_grid, loglambda_grid, Pfunc='Shen', Fractional=False, facfunc='Interp', mth=None, loglam_norm=None, sig=None, **kwargs):
         """
@@ -2016,6 +1177,9 @@ class Model_Info(object):
             import numpy as mth
 
         #################################
+
+        linear_lambda_grid = 10**loglambda_grid
+        dloglam = loglambda_grid[1] - loglambda_grid[0]
         
         phiL = mth.zeros_like(logL_grid)
 
@@ -2027,19 +1191,19 @@ class Model_Info(object):
             phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
 
             if facfunc == 'Zou':
-                Factive = self.facfunc_zou(mbh_log10, redshift)
+                Factive = self.facfunc_zou(mbh_log10=logM_edd, redshift=redshift)
 
             elif facfunc == 'Quad':
-                Factive = self.facfunc_quad(redshift)
+                Factive = self.facfunc_quad(redshift=redshift)
             
             elif facfunc == 'Cube':
-                Factive = self.facfunc_cube(redshift)
+                Factive = self.facfunc_cube(redshift=redshift)
 
             elif facfunc == 'Interp':
-                Factive = self.facfunc_interp(redshift)
+                Factive = self.facfunc_interp(redshift=redshift)
 
             elif facfunc == 'Interp_low':
-                Factive = self.facfunc_interp_low(redshift)
+                Factive = self.facfunc_interp_low(redshift=redshift)
             
             elif type(facfunc) != str:
                 Factive = facfunc
@@ -2051,17 +1215,24 @@ class Model_Info(object):
                 Ploglam = self.Prob_lam_Aird(loglambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
 
             elif Pfunc == 'Ananna':
-                Ploglam = self.Prob_lam_Ananna(loglambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
+                Ploglam = self.Prob_lam_Ananna(linear_lambda_grid=linear_lambda_grid, dloglam=dloglam, mbh_log10=logM_edd, mth=mth, **kwargs)
+            
+            elif Pfunc == 'Three':
+                Ploglam = self.Prob_lam_Three(linear_lambda_grid=linear_lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
 
             if Fractional == True:
                 if facfunc == 'Zou':
                     raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
                 Ploglam = self.Prob_lam_Fractional(loglambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
                 Factive = 1  # This avoids double counting Factive in the integral below
-            
-            dlam = loglambda_grid[1] - loglambda_grid[0]
 
-            integrand = mth.sum(phiM_interp * Ploglam * Factive) * dlam / logM_edd.shape[0]
+            y = phiM_interp * Ploglam * Factive
+
+            dlam = loglambda_grid[1:] - loglambda_grid[:-1]
+
+            integrand = (mth.sum(0.5 * dlam[:, None] * (y[1:] + y[:-1])) / logM_edd.shape[0])
+            # integrand = (mth.sum(0.5 * dlam[None, :] * (y[:, :-1] + y[:, 1:])) / logM_edd.shape[0])
+
             phiL_list.append(integrand)
 
         phiL = mth.stack(phiL_list)
