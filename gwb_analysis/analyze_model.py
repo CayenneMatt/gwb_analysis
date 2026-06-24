@@ -722,76 +722,6 @@ class Model_Info(object):
         """
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
         return dat['x'], dat['y']
-
-    def calculate_radiative_efficiency(self, redshift, mbh_log10, step=1e-3, path_to_shen_fits="/Users/cayenne/Documents/Research/quasarlf/qlffits/"):
-        """
-        Calculate the radiative efficiency implied by the model at a given redshift by comparing the change in the black hole mass function between two redshifts to the
-        luminosity function at the average redshift. This is a rough calculation that assumes that the change in the BHMF and LF between the two redshifts is solely due to accretion
-        and does not consider mergers or other processes that may contribute to the growth of black holes.
-
-        May have bugs, shouldn't be used
-
-        Parameters
-        -----------
-        redshift : float
-            The redshift at which to calculate the radiative efficiency
-        mbh_log10 : array-like
-            The log10 of the black hole masses at which to evaluate the BHMF.
-        step : float, optional
-            The step in redshift to use for calculating the change in the BHMF and LF. Default is 1e-3
-        path_to_shen_fits: str, optional
-            Path to the `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_ fits for the bolometric LF at different redshifts. Default is "/Users/cayenne/Documents/Research/quasarlf/qlffits/"
-
-        Returns
-        --------
-        erad : float
-            Radiative efficiency between the two redshifts
-        mdot : float
-            The total integrated mass density gain between those redshifts (scaled)
-        Lum : float
-            The total integrated luminosity at the latter redshift
-
-        .. warning::
-            * Does not incorporate AGN Fraction
-            * Radiative efficiency is a constant here
-            * Need to make sure that it is always integrating over roughly similar mass - luminosity ranges
-            * Integration only cosiders two bins and nothing in between, but should be fine for order of magnitude calculation
-            * May have a volume normalization issue
-
-        """
-        f_obsc = 1/3  # Fraction of AGN that are not obscured and therefore observed in the LF
-        f_acc = 0.9  # Fraction of BH growth due to accretion as opposed to mergers
-        # Get BHMF at each redshift
-        # volume = cosmo.comoving_volume(z2) - cosmo.comoving_volume(z1)
-
-        z1 = redshift
-        z2 = redshift + step
-
-        dt = cosmo.lookback_time(z2) - cosmo.lookback_time(z1)
-
-        # Mass Function
-        bhmf1 = self.bhmf(mbh_log10, redshift=z1)
-        bhmf2 = self.bhmf(mbh_log10, redshift=z2)
-        
-        mdot = trapz((bhmf1 - bhmf2) * 10**mbh_log10, mbh_log10) * u.Msun / dt * f_obsc / f_acc#/ u.Mpc**3 * volume
-
-        if mdot < 0:
-            print('Warning: Negative mass accreted between z1 = {} and z2 = {} for model {}.'.format(np.round(z1, 2), np.round(z2, 2), self.model_name))
-
-        # Luminosity Function
-
-        shen_fit = self.get_shenf(redshift, path_to_shen_fits)
-        phiL = 10**(shen_fit[1])
-        logL = shen_fit[0]
-
-        Lum = trapz((phiL) * 10**logL, logL) * u.erg / u.s #/ u.Mpc**3 * volume
-
-        # Radiative Efficiency Calculation
-
-        erad = Lum / (mdot * c.c**2)
-        # erad = mdot
-
-        return erad.decompose(), mdot.to(u.Msun / u.yr), Lum
     
     def facfunc_zou(self, mbh_log10, redshift, facmin=0.00001):
         """
@@ -1056,8 +986,9 @@ class Model_Info(object):
 
         plam = 10**A * mth.where(loglambda_grid < lambda_break, p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta[:,mth.newaxis]
 
-        dlam = loglambda_grid[1] - loglambda_grid[0]
-        norm = mth.sum(plam, axis=1, keepdims=True) * dlam
+        # dlam = loglambda_grid[1] - loglambda_grid[0]
+        # norm = mth.sum(plam, axis=1, keepdims=True) * dlam
+        norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (loglambda_grid[1:] - loglambda_grid[:-1]), axis=1, keepdims=True)
         return plam / norm
     
     def Prob_lam_Ananna(self, linear_lambda_grid, dloglam, mbh_log10, delta1=0.38, eta_lambda=2.260, m=-0.885, b=6.671, mth=None):
@@ -1101,8 +1032,47 @@ class Model_Info(object):
 
         plam = 1 / (ratio**delta1 * (1 + ratio**eta_lambda))
 
-        plam = mth.where(linear_lambda_grid < 0.0001, 1e-100, plam)
+        # plam = mth.where(linear_lambda_grid < 0.0001, 1e-100, plam)
         norm = mth.sum(plam, axis=1, keepdims=True) * dloglam
+        # norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=1, keepdims=True)
+        return plam / norm
+    
+    def Prob_lam_Three(self, linear_lambda_grid, mbh_log10, redshift, alpha=1, beta=-0.65, gamma=-2.1, lam1=10**-4, lam2=10**0, mth=None):
+        """
+        Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
+        equation 1, has overal scatter of 0.38 dex. Individual reported uncertainties on input parameters are indicated below.
+
+        Parameters
+        ----------
+        loglambda_grid : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function
+        mbh_log10 : array
+            Log10 of the black hole masses at which to evaluate the probability density function, shape should be (n_masses,)
+        redshift : float
+            Redshift at which to evaluate the probability density function
+        mth : module, optional
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
+        
+        Returns
+        -------
+        prob : array
+            The probability density function of lambda at the given redshift, evaluated at the input log lambda values. Shape is (n_masses, n_loglambda_grid)
+        """
+        if mth is None:
+            import numpy as mth
+
+        beta = beta * mth.ones(mbh_log10.shape[0])
+
+        p_low = lam1**(beta-alpha) * (linear_lambda_grid[mth.newaxis,:])**alpha
+
+        p_mid = (linear_lambda_grid[mth.newaxis,:])**beta[:,mth.newaxis]
+
+        p_hi = lam2**(beta-gamma) * linear_lambda_grid[mth.newaxis,:]**gamma
+
+        plam_temp = mth.where(linear_lambda_grid < lam1, p_low, p_mid)
+        plam = mth.where(linear_lambda_grid < lam2, plam_temp, p_hi)
+
+        norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=1, keepdims=True)
         return plam / norm
 
     def Prob_lam_Inactive(self, loglambda_grid, loglam_norm=-10, sig=1, mth=None):
@@ -1133,13 +1103,11 @@ class Model_Info(object):
         if sig is None:
             sig = 1
         
-
         lln = mth.ones(loglambda_grid.shape[0]) * loglam_norm
-        Ploglam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - lln[:,mth.newaxis])**2 / (2 * sig**2)))
+        plam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - lln[:,mth.newaxis])**2 / (2 * sig**2)))
         
-        dlam = loglambda_grid[1] - loglambda_grid[0]
-        norm = mth.sum(Ploglam, axis=1, keepdims=True) * dlam
-        return Ploglam / norm
+        norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (loglambda_grid[1:] - loglambda_grid[:-1]), axis=1, keepdims=True)
+        return plam / norm
             
     def Prob_lam_Fractional(self, loglambda_grid, Factive, Ploglam_active, loglam_norm=None, sig=None, mth=None):
         """
@@ -1223,19 +1191,19 @@ class Model_Info(object):
             phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
 
             if facfunc == 'Zou':
-                Factive = self.facfunc_zou(mbh_log10, redshift)
+                Factive = self.facfunc_zou(mbh_log10=logM_edd, redshift=redshift)
 
             elif facfunc == 'Quad':
-                Factive = self.facfunc_quad(redshift)
+                Factive = self.facfunc_quad(redshift=redshift)
             
             elif facfunc == 'Cube':
-                Factive = self.facfunc_cube(redshift)
+                Factive = self.facfunc_cube(redshift=redshift)
 
             elif facfunc == 'Interp':
-                Factive = self.facfunc_interp(redshift)
+                Factive = self.facfunc_interp(redshift=redshift)
 
             elif facfunc == 'Interp_low':
-                Factive = self.facfunc_interp_low(redshift)
+                Factive = self.facfunc_interp_low(redshift=redshift)
             
             elif type(facfunc) != str:
                 Factive = facfunc
@@ -1248,16 +1216,23 @@ class Model_Info(object):
 
             elif Pfunc == 'Ananna':
                 Ploglam = self.Prob_lam_Ananna(linear_lambda_grid=linear_lambda_grid, dloglam=dloglam, mbh_log10=logM_edd, mth=mth, **kwargs)
+            
+            elif Pfunc == 'Three':
+                Ploglam = self.Prob_lam_Three(linear_lambda_grid=linear_lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
 
             if Fractional == True:
                 if facfunc == 'Zou':
                     raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
                 Ploglam = self.Prob_lam_Fractional(loglambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
                 Factive = 1  # This avoids double counting Factive in the integral below
-            
-            dlam = loglambda_grid[1] - loglambda_grid[0]
 
-            integrand = mth.sum(phiM_interp * Ploglam * Factive) * dlam / logM_edd.shape[0]
+            y = phiM_interp * Ploglam * Factive
+
+            dlam = loglambda_grid[1:] - loglambda_grid[:-1]
+
+            integrand = (mth.sum(0.5 * dlam[:, None] * (y[1:] + y[:-1])) / logM_edd.shape[0])
+            # integrand = (mth.sum(0.5 * dlam[None, :] * (y[:, :-1] + y[:, 1:])) / logM_edd.shape[0])
+
             phiL_list.append(integrand)
 
         phiL = mth.stack(phiL_list)
