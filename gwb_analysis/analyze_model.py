@@ -1222,7 +1222,7 @@ class Model_Info(object):
                 Ploglam = self.Prob_lam_Ananna(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, mth=mth, **kwargs)
             
             elif Pfunc == 'Three':
-                Ploglam = self.Prob_lam_Three(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
+                Ploglam = self.Prob_lam_Three(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, mth=mth, **kwargs)
 
             if Fractional == True:
                 if facfunc == 'Zou':
