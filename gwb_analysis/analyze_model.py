@@ -1142,7 +1142,7 @@ class Model_Info(object):
 
         return Plam_tot
 
-    def PhiM_to_PhiL_erdf(self, mbh_log10, phiM, redshift, logL_grid, loglambda_grid, Pfunc='Shen', Fractional=False, facfunc='Interp', mth=None, loglam_norm=None, sig=None, **kwargs):
+    def PhiM_to_PhiL_erdf(self, mbh_log10, phiM, redshift, logL_grid, lambda_grid, Pfunc='Shen', Fractional=False, facfunc='Interp', mth=None, loglam_norm=None, sig=None, **kwargs):
         """
         Convert a BH mass function into an AGN luminosity function.
 
@@ -1154,8 +1154,8 @@ class Model_Info(object):
             Phi_BH(logM)
         logL_grid : array
             log10(Lbol / erg s^-1)
-        loglambda_grid : array
-            log10(Eddington ratio grid)
+        lambda_grid : array
+            Eddington ratio grid, may be in log10 or linear space depending on the Pfunc used
         Pfunc : str or float
             Function to use for the ERDF, options are 'Shen' and 'Aird'. Default is 'Shen'.
         Fractional : bool, optional
@@ -1178,15 +1178,15 @@ class Model_Info(object):
 
         #################################
 
-        linear_lambda_grid = 10**loglambda_grid
-        dloglam = loglambda_grid[1] - loglambda_grid[0]
+        # linear_lambda_grid = 10**loglambda_grid
+        dloglam = lambda_grid[1] - lambda_grid[0]
         
         phiL = mth.zeros_like(logL_grid)
 
         phiL_list = []
 
         for logL in logL_grid:
-            logM_edd = (logL - loglambda_grid - mth.log10(C_edd))
+            logM_edd = (logL - lambda_grid - mth.log10(C_edd))
 
             phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
 
@@ -1209,26 +1209,26 @@ class Model_Info(object):
                 Factive = facfunc
 
             if Pfunc == 'Shen':
-                Ploglam = self.Prob_lam_Shen(loglambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
+                Ploglam = self.Prob_lam_Shen(loglambda_grid=lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
     
             elif Pfunc == 'Aird':
-                Ploglam = self.Prob_lam_Aird(loglambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
+                Ploglam = self.Prob_lam_Aird(loglambda_grid=lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
 
             elif Pfunc == 'Ananna':
-                Ploglam = self.Prob_lam_Ananna(linear_lambda_grid=linear_lambda_grid, dloglam=dloglam, mbh_log10=logM_edd, mth=mth, **kwargs)
+                Ploglam = self.Prob_lam_Ananna(linear_lambda_grid=lambda_grid, dloglam=dloglam, mbh_log10=logM_edd, mth=mth, **kwargs)
             
             elif Pfunc == 'Three':
-                Ploglam = self.Prob_lam_Three(linear_lambda_grid=linear_lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
+                Ploglam = self.Prob_lam_Three(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
 
             if Fractional == True:
                 if facfunc == 'Zou':
                     raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
-                Ploglam = self.Prob_lam_Fractional(loglambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
+                Ploglam = self.Prob_lam_Fractional(lambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
                 Factive = 1  # This avoids double counting Factive in the integral below
 
             y = phiM_interp * Ploglam * Factive
 
-            dlam = loglambda_grid[1:] - loglambda_grid[:-1]
+            dlam = lambda_grid[1:] - lambda_grid[:-1]
 
             integrand = (mth.sum(0.5 * dlam[:, None] * (y[1:] + y[:-1])) / logM_edd.shape[0])
             # integrand = (mth.sum(0.5 * dlam[None, :] * (y[:, :-1] + y[:, 1:])) / logM_edd.shape[0])
