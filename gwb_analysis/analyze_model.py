@@ -938,11 +938,11 @@ class Model_Info(object):
         dPt1 = (1 - F) * mth.power(10.0, loglambda_grid[mth.newaxis,:])**(1 + alpha) * mth.exp(-mth.power(10.0, loglambda_grid[mth.newaxis,:]) / lam1)
         Pt1 = mth.sum(dPt1) * dlam
 
-        A = (1 - F) / Pt1 
+        A = (1 - F) / Pt1
 
-        A = A * mth.ones(mbh_log10.shape[0])
-        
-        return (1 - F) * A[:,mth.newaxis] * (10**loglambda_grid[mth.newaxis,:])**(1 + alpha) * mth.exp(-10**loglambda_grid[mth.newaxis,:] / lam1) + F /\
+        A = A * mth.ones_like(mbh_log10)
+
+        return (1 - F) * A[..., mth.newaxis] * (10**loglambda_grid[mth.newaxis,:])**(1 + alpha) * mth.exp(-10**loglambda_grid[mth.newaxis,:] / lam1) + F /\
         mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - loglam2)**2 / (2 * sig**2)))
 
     def Prob_lam_Aird(self, loglambda_grid, mbh_log10, redshift, gamma1=-0.65, gamma2=-2.1, lambda_break=0.0, A=-3.15, beta=3.5, z0=0.6, mth=None):
@@ -982,17 +982,17 @@ class Model_Info(object):
             import numpy as mth
 
         linear_lambda_grid = 10**loglambda_grid[mth.newaxis,:]
-        beta = beta * mth.ones(mbh_log10.shape[0])
+        beta = beta * mth.ones_like(mbh_log10)
 
         p_low = (linear_lambda_grid)**gamma1
 
         p_hi = (linear_lambda_grid)**gamma2
 
-        plam = 10**A * mth.where(loglambda_grid < lambda_break, p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta[:,mth.newaxis]
+        plam = 10**A * mth.where(loglambda_grid < lambda_break, p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta[..., mth.newaxis]
 
         # dlam = loglambda_grid[1] - loglambda_grid[0]
         # norm = mth.sum(plam, axis=1, keepdims=True) * dlam
-        norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (loglambda_grid[1:] - loglambda_grid[:-1]), axis=1, keepdims=True)
+        norm = mth.sum(1/2 * (plam[...,1:] + plam[...,:-1]) * (loglambda_grid[1:] - loglambda_grid[:-1]), axis=-1, keepdims=True)
         return plam / norm
     
     def Prob_lam_Ananna(self, linear_lambda_grid, mbh_log10, delta1=0.38, eta_lambda=2.260, m=-0.885, b=6.671, mth=None):
@@ -1026,17 +1026,17 @@ class Model_Info(object):
 
         lambda_star = 10**(mbh_log10 * m + b)  # Default single value is 10**-1.338
 
-        ratio = linear_lambda_grid[mth.newaxis,:] / lambda_star[:,mth.newaxis]
+        ratio = linear_lambda_grid / lambda_star[..., mth.newaxis]
 
         plam = 1 / (ratio**delta1 * (1 + ratio**eta_lambda))
 
         # plam = mth.where(linear_lambda_grid < 0.0001, 1e-100, plam)
         dloglam = linear_lambda_grid[1] - linear_lambda_grid[0]
-        norm = mth.sum(plam, axis=1, keepdims=True) * dloglam
-        # norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=1, keepdims=True)
+        norm = mth.sum(plam, axis=-1, keepdims=True) * dloglam
+        # norm = mth.sum(1/2 * (plam[...,1:] + plam[...,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=-1, keepdims=True)
         return plam / norm
     
-    def Prob_lam_Three(self, linear_lambda_grid, mbh_log10, alpha=1, beta=-0.65, gamma=-2.1, lam1=10**-4, lam2=10**0, mth=None):
+    def Prob_lam_Three(self, linear_lambda_grid, mbh_log10, alpha=1, beta=-0.65, gamma=-12, lam1=10**-4, lam2=10**0, mth=None):
         """
         Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
         equation 1, has overal scatter of 0.38 dex. Individual reported uncertainties on input parameters are indicated below.
@@ -1052,7 +1052,7 @@ class Model_Info(object):
         beta : float, optional
             Low-luminosity (middle) slope of double power law of ERDF. Default is -0.65
         gamma : float, optional
-            High-luminosity (right-most) slope of double power law of ERDF. Default is -2.1
+            High-luminosity (right-most) slope of double power law of ERDF. Default is -12
         lam1 : float, optional
             Low-luminosity (left) break of power law of ERDF. Default is 10**-4
         lam2 : float, optional
@@ -1068,18 +1068,18 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        beta = beta * mth.ones(mbh_log10.shape[0])
+        beta = beta * mth.ones_like(mbh_log10)
 
-        p_low = lam1**(beta-alpha) * (linear_lambda_grid[mth.newaxis,:])**alpha
+        p_low = lam1**(beta-alpha)[..., mth.newaxis] * linear_lambda_grid**alpha
 
-        p_mid = (linear_lambda_grid[mth.newaxis,:])**beta[:,mth.newaxis]
+        p_mid = linear_lambda_grid**beta[..., mth.newaxis]
 
-        p_hi = lam2**(beta-gamma) * linear_lambda_grid[mth.newaxis,:]**gamma
+        p_hi = lam2**(beta-gamma)[..., mth.newaxis] * linear_lambda_grid**gamma
 
         plam_temp = mth.where(linear_lambda_grid < lam1, p_low, p_mid)
         plam = mth.where(linear_lambda_grid < lam2, plam_temp, p_hi)
 
-        norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=1, keepdims=True)
+        norm = mth.sum(1/2 * (plam[...,1:] + plam[...,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=-1, keepdims=True)
         return plam / norm
 
     def Prob_lam_Inactive(self, loglambda_grid, loglam_norm=-10, sig=1, mth=None):
@@ -1141,11 +1141,11 @@ class Model_Info(object):
         if mth is None:
             import numpy as mth
 
-        F = mth.ones(Ploglam_active.shape[0])*Factive
+        F = mth.ones_like(Ploglam_active[..., 0])*Factive
 
         Ploglam_inactive = self.Prob_lam_Inactive(loglambda_grid, mth=mth, loglam_norm=loglam_norm, sig=sig)
 
-        Plam_tot = Ploglam_inactive * (1 - F[:,None]) + Ploglam_active * F[:,None]
+        Plam_tot = Ploglam_inactive * (1 - F[..., mth.newaxis]) + Ploglam_active * F[..., mth.newaxis]
 
         return Plam_tot
 
@@ -1184,60 +1184,63 @@ class Model_Info(object):
             import numpy as mth
 
         #################################
-        
-        phiL = mth.zeros_like(logL_grid)
 
-        phiL_list = []
+        # Vectorized across logL_grid (no Python loop): mbh_log10 here is logM_edd, which gains a
+        # leading logL axis below. Prob_lam_* and Prob_lam_Fractional accept an arbitrary leading
+        # batch shape on mbh_log10 (see their definitions), so this single batched call reproduces
+        # exactly what the old per-logL loop computed, row-for-row -- it's just issued as one
+        # vectorized op instead of len(logL_grid) separate ones. This matters most when mth=pt
+        # (PyTensor/PyMC): the Python loop used to force a separate symbolic sub-graph per logL
+        # point, which dominated graph build/compile time for gradient-based sampling.
+        n_lambda = lambda_grid.shape[0]
 
-        for logL in logL_grid:
-            logM_edd = (logL - lambda_grid - mth.log10(C_edd))
+        logM_edd = logL_grid[:, mth.newaxis] - lambda_grid[mth.newaxis, :] - mth.log10(C_edd)  # (n_L, n_lambda)
 
-            phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)
+        phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)  # (n_L, n_lambda)
 
+        if facfunc == 'Zou':
+            Factive = self.facfunc_zou(mbh_log10=logM_edd, redshift=redshift)  # (n_L, n_lambda)
+
+        elif facfunc == 'Quad':
+            Factive = self.facfunc_quad(redshift=redshift)
+
+        elif facfunc == 'Cube':
+            Factive = self.facfunc_cube(redshift=redshift)
+
+        elif facfunc == 'Interp':
+            Factive = self.facfunc_interp(redshift=redshift)
+
+        elif facfunc == 'Interp_low':
+            Factive = self.facfunc_interp_low(redshift=redshift)
+
+        elif type(facfunc) != str:
+            Factive = facfunc
+
+        if Pfunc == 'Shen':
+            Ploglam = self.Prob_lam_Shen(loglambda_grid=lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
+
+        elif Pfunc == 'Aird':
+            Ploglam = self.Prob_lam_Aird(loglambda_grid=lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
+
+        elif Pfunc == 'Ananna':
+            Ploglam = self.Prob_lam_Ananna(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, mth=mth, **kwargs)
+
+        elif Pfunc == 'Three':
+            Ploglam = self.Prob_lam_Three(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, mth=mth, **kwargs)
+
+        if Fractional == True:
             if facfunc == 'Zou':
-                Factive = self.facfunc_zou(mbh_log10=logM_edd, redshift=redshift)
+                raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
+            Ploglam = self.Prob_lam_Fractional(lambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
+            Factive = 1  # This avoids double counting Factive in the integral below
+        elif facfunc == 'Zou':
+            Factive = Factive[:, mth.newaxis, :]
 
-            elif facfunc == 'Quad':
-                Factive = self.facfunc_quad(redshift=redshift)
-            
-            elif facfunc == 'Cube':
-                Factive = self.facfunc_cube(redshift=redshift)
+        y = phiM_interp[:, mth.newaxis, :] * Ploglam * Factive
 
-            elif facfunc == 'Interp':
-                Factive = self.facfunc_interp(redshift=redshift)
+        dlam = lambda_grid[1:] - lambda_grid[:-1]
 
-            elif facfunc == 'Interp_low':
-                Factive = self.facfunc_interp_low(redshift=redshift)
-            
-            elif type(facfunc) != str:
-                Factive = facfunc
+        phiL = mth.sum(0.5 * dlam[mth.newaxis, :, mth.newaxis] * (y[:, 1:, :] + y[:, :-1, :]), axis=(1, 2)) / n_lambda
+        # phiL = mth.sum(0.5 * dlam[None, None, :] * (y[:, :, :-1] + y[:, :, 1:]), axis=(1, 2)) / n_lambda
 
-            if Pfunc == 'Shen':
-                Ploglam = self.Prob_lam_Shen(loglambda_grid=lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
-    
-            elif Pfunc == 'Aird':
-                Ploglam = self.Prob_lam_Aird(loglambda_grid=lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
-
-            elif Pfunc == 'Ananna':
-                Ploglam = self.Prob_lam_Ananna(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, mth=mth, **kwargs)
-            
-            elif Pfunc == 'Three':
-                Ploglam = self.Prob_lam_Three(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, mth=mth, **kwargs)
-
-            if Fractional == True:
-                if facfunc == 'Zou':
-                    raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
-                Ploglam = self.Prob_lam_Fractional(lambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
-                Factive = 1  # This avoids double counting Factive in the integral below
-
-            y = phiM_interp * Ploglam * Factive
-
-            dlam = lambda_grid[1:] - lambda_grid[:-1]
-
-            integrand = (mth.sum(0.5 * dlam[:, None] * (y[1:] + y[:-1])) / logM_edd.shape[0])
-            # integrand = (mth.sum(0.5 * dlam[None, :] * (y[:, :-1] + y[:, 1:])) / logM_edd.shape[0])
-
-            phiL_list.append(integrand)
-
-        phiL = mth.stack(phiL_list)
         return phiL
