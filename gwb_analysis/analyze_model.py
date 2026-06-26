@@ -723,9 +723,13 @@ class Model_Info(object):
             The x-axis values, luminosity in log10(L/erg/s)
         y : array
             Data for log phiL
+        dx : array
+            Y-axis uncertainty in the fit to log phiL
+        dy : array
+            X-axis uncertainty in the fit to log phiL, not physical, may be negative
         """
         dat = np.genfromtxt(path_to_shen_data+"bolometric_data_"+str(redshift)+".txt", dtype=None, encoding=None, names=True)
-        return dat['x'], dat['y']
+        return dat['x'], dat['y'], dat['dx'], dat['dy']
     
     def facfunc_zou(self, mbh_log10, redshift, facmin=0.00001):
         """
