@@ -1036,7 +1036,7 @@ class Model_Info(object):
         # norm = mth.sum(1/2 * (plam[...,1:] + plam[...,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=-1, keepdims=True)
         return plam / norm
     
-    def Prob_lam_Three(self, linear_lambda_grid, mbh_log10, alpha=1, beta=-0.65, gamma=-12, lam1=10**-4, lam2=10**0, mth=None):
+    def Prob_lam_Three(self, linear_lambda_grid, mbh_log10, alpha=1, beta=-0.65, gamma=-2.1, lam1=10**-4, lam2=10**0, mth=None):
         """
         Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
         equation 1, has overal scatter of 0.38 dex. Individual reported uncertainties on input parameters are indicated below.
@@ -1052,7 +1052,7 @@ class Model_Info(object):
         beta : float, optional
             Low-luminosity (middle) slope of double power law of ERDF. Default is -0.65
         gamma : float, optional
-            High-luminosity (right-most) slope of double power law of ERDF. Default is -12
+            High-luminosity (right-most) slope of double power law of ERDF. Default is -2.1
         lam1 : float, optional
             Low-luminosity (left) break of power law of ERDF. Default is 10**-4
         lam2 : float, optional
@@ -1185,16 +1185,14 @@ class Model_Info(object):
 
         #################################
 
-        # Vectorized across logL_grid (no Python loop): mbh_log10 here is logM_edd, which gains a
-        # leading logL axis below. Prob_lam_* and Prob_lam_Fractional accept an arbitrary leading
-        # batch shape on mbh_log10 (see their definitions), so this single batched call reproduces
-        # exactly what the old per-logL loop computed, row-for-row -- it's just issued as one
-        # vectorized op instead of len(logL_grid) separate ones. This matters most when mth=pt
-        # (PyTensor/PyMC): the Python loop used to force a separate symbolic sub-graph per logL
-        # point, which dominated graph build/compile time for gradient-based sampling.
         n_lambda = lambda_grid.shape[0]
 
-        logM_edd = logL_grid[:, mth.newaxis] - lambda_grid[mth.newaxis, :] - mth.log10(C_edd)  # (n_L, n_lambda)
+        if Pfunc in ('Three', 'Ananna'):
+            loglambda_grid_for_mass = mth.log10(lambda_grid)
+        else:
+            loglambda_grid_for_mass = lambda_grid
+
+        logM_edd = logL_grid[:, mth.newaxis] - loglambda_grid_for_mass[mth.newaxis, :] - mth.log10(C_edd)  # (n_L, n_lambda)
 
         phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)  # (n_L, n_lambda)
 
