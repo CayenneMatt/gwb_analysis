@@ -1198,7 +1198,7 @@ class Model_Info(object):
 
         logM_edd = logL_grid[:, mth.newaxis] - loglambda_grid_for_mass[mth.newaxis, :] - mth.log10(C_edd)  # (n_L, n_lambda)
 
-        phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=0.0)  # (n_L, n_lambda)
+        phiM_interp = mth.interp(logM_edd, mbh_log10, phiM)  # (n_L, n_lambda)
 
         if facfunc == 'Zou':
             Factive = self.facfunc_zou(mbh_log10=logM_edd, redshift=redshift)  # (n_L, n_lambda)
