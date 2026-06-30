@@ -121,7 +121,7 @@ class Model_Info(object):
             try:
                 self.param_names = np.array(ast.literal_eval(input('Parameter names not found in data, please input parameter names as a list: ')))
             except:
-                self.param_names = ['hard_time', 'hard_gamma_inner', 'hard_rchar', 'gsmf_log10_phi_one_z0', 'gsmf_log10_phi_one_z1', 'gsmf_log10_phi_one_z2', 'gsmf_log10_phi_two_z0', 'gsmf_log10_phi_two_z1', 'gsmf_log10_phi_two_z2', 'gsmf_log10_mstar_z0', 'gsmf_log10_mstar_z1', 'gsmf_log10_mstar_z2', 'gsmf_alpha_one', 'gsmf_alpha_two', 'gmr_norm0_log10', 'gmr_normz', 'gmr_malpha0', 'gmr_malphaz', 'gmr_mdelta0', 'gmr_mdeltaz', 'gmr_qgamma0', 'gmr_qgammaz', 'gmr_qgammam', 'mmb_mamp_log10', 'mmb_plaw', 'mmb_zplaw_amp', 'mmb_scatter_dex', 'bf_frac_lo', 'bf_frac_hi', 'bf_width_dex']
+                self.param_names = ['hard_time', 'hard_gamma_inner', 'hard_rchar', 'gsmf_log10_phi_one_z0', 'gsmf_log10_phi_one_z1', 'gsmf_log10_phi_one_z2', 'gsmf_log10_phi_two_z0', 'gsmf_log10_phi_two_z1', 'gsmf_log10_phi_two_z2', 'gsmf_log10_mstar_z0', 'gsmf_log10_mstar_z1', 'gsmf_log10_mstar_z2', 'gsmf_alpha_one', 'gsmf_alpha_two', 'gmr_norm0_log10', 'gmr_normz', 'gmr_malpha0', 'gmr_malphaz', 'gmr_mdelta0', 'gmr_mdeltaz', 'gmr_qgamma0', 'gmr_qgammaz', 'gmr_qgammam', 'mmb_mamp_log10', 'mmb_plaw', 'mmb_scatter_dex', 'bf_frac_lo', 'bf_frac_hi', 'bf_width_dex']
 
         self.param_samples = dat['params']  # Parameter sample associated with each model
         self.ln_like = dat['ln_like']  # Log-likelihood of each model
