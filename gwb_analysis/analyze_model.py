@@ -99,9 +99,6 @@ class Model_Info(object):
         Class of the parameter space, used to get priors and fiducial values
     fiducial_values:  dict
         Dictionary of fiducial values for each parameter in the model
-    params : dict
-        Dictionary of median posterior values for each parameter in the model,
-        will be the same as fiducial unless get_posteriors() is called
     params_err : dict
         Dictionary of standard deviation of posterior values for each parameter in the model,
         will be the same as fiducial values unless get_posteriors() is called
@@ -293,11 +290,11 @@ class Model_Info(object):
             name of the parameter to plot, should be one of the parameter names in the model
         nbins : int, optional
             number of bins to use in the histogram, default is 20
-        label : str, optional
-            label for the histogram, default is None, in which case the parameter name will be used
         prior : bool, optional
             whether to plot the prior distribution overlaid on the histogram, default is False
-        
+        kwargs :
+            additional keyword arguments to be passed to ax.hist
+
         Returns
         -------
         self, the histogram is added to the given axis
@@ -327,6 +324,8 @@ class Model_Info(object):
 
         Parameters
         ----------
+        fontsize : int, optional
+            Font size for axis labels and tick labels. Default is 25
         nbins : int, optional
             Number of bins to use in the histograms and contour plots. Default is 20
         cmap : str, optional
@@ -606,6 +605,8 @@ class Model_Info(object):
             Black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)
         redshift : float
             Redshift at which the BHMF is evaluated
+        ndraws : int, optional
+            Number of random draws to take from the posterior of each parameter, used to estimate the uncertainty in the BHMF. Default is 100
 
         Returns
         --------
@@ -664,10 +665,10 @@ class Model_Info(object):
         Parameters
         -----------
         mstar_log10 : array
-            Black hole masses at which to evaluate the BHMF, in log10(Mbh/Msol)
+            Stellar masses at which to evaluate the GSMF, in log10(Mstar/Msol)
         redshift : float
-            Redshift at which the BHMF is evaluated
-        
+            Redshift at which the GSMF is evaluated
+
         Returns
         --------
         gsmf : array
@@ -714,7 +715,7 @@ class Model_Info(object):
         -----------
         redshift : float
             Redshift of the fit to be used 0.2-7.0 in steps of 0.2
-        path_to_shen_fits : str, optional
+        path_to_shen_data : str, optional
             Path to the data. Default is "/Users/cayenne/Documents/Research/quasarlf/qlfdata/"
 
         Returns
@@ -743,7 +744,7 @@ class Model_Info(object):
         redshift : float
             Redshift at which to evaluate the AGN fraction
         facmin : float, optional
-            Minimum AGN fraction to return, default is 0.0, which is the value used in `Shen et al. 2020 <https://ui.adsabs.harvard.edu/abs/2020MNRAS.495.3252S/abstract>`_
+            Minimum AGN fraction to return, default is 0.00001
         
         Returns
         -------
@@ -768,34 +769,6 @@ class Model_Info(object):
         phi_fa[phi_fa < facmin] = facmin
 
         return phi_fa
-    
-    def facfunc_quad(self, redshift, facmin=0.0):
-        """
-        Calculate AGN fraction as a function of redshift using a quadratic fit to data from `Zou et al. (2024) <https://ui.adsabs.harvard.edu/abs/2024ApJ...964..183Z/graphics>`_.
-
-        Parameters
-        ----------
-        redshift : float
-            Redshift at which to evaluate the AGN fraction
-        facmin : float, optional
-            Minimum AGN fraction to return. Default is 0.0
-        
-        Returns
-        -------
-        Factive : float
-            AGN fraction as a function of redshift
-        """
-        a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0806857142857146
-        # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.0406857142857146
-        # a, b, c = -0.025714285714285707, 0.1685714285714286, -0.00806857142857146
-        Factive = a * redshift**2 + b * redshift + c
-
-        try:
-            Factive[Factive < facmin] = facmin
-        except TypeError:
-            if Factive < facmin:
-                Factive = facmin
-        return Factive
 
     def facfunc_shan(self, mbh_log10, N0, alpha, beta, mbh_star):
         """
@@ -814,7 +787,7 @@ class Model_Info(object):
         beta : float
             The high-mass slope
         mbh_star : float
-            The characteristic black hole mass at which the active fraction transitions from the low-mass slope to
+            The characteristic black hole mass at which the active fraction transitions from the low-mass slope to the high-mass slope
 
         Returns
         -------
@@ -988,58 +961,107 @@ class Model_Info(object):
         linear_lambda_grid = 10**loglambda_grid[mth.newaxis,:]
         beta = beta * mth.ones_like(mbh_log10)
 
-        p_low = (linear_lambda_grid)**gamma1
+        scaled_lambda_grid = linear_lambda_grid / 10**lambda_break
 
-        p_hi = (linear_lambda_grid)**gamma2
+        p_low = scaled_lambda_grid**gamma1
+
+        p_hi = scaled_lambda_grid**gamma2
 
         plam = 10**A * mth.where(loglambda_grid < lambda_break, p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta[..., mth.newaxis]
 
-        # dlam = loglambda_grid[1] - loglambda_grid[0]
-        # norm = mth.sum(plam, axis=1, keepdims=True) * dlam
-        norm = mth.sum(1/2 * (plam[...,1:] + plam[...,:-1]) * (loglambda_grid[1:] - loglambda_grid[:-1]), axis=-1, keepdims=True)
-        return plam / norm
-    
-    def Prob_lam_Ananna(self, linear_lambda_grid, mbh_log10, delta1=0.38, eta_lambda=2.260, m=-0.885, b=6.671, mth=None):
+        return plam
+
+    def active_fraction_aird(self, mbh_log10, redshift, loglambda_thresh, loglambda_grid, mth=None, **kwargs):
         """
-        Eddington ratio distribution function from `Ananna et al. (2022) <https://ui.adsabs.harvard.edu/abs/2022ApJS..261....9A/abstract>`_ Equation 11 and Table 4.
+        Probability that a black hole is accreting above a given Eddington
+        ratio threshold, under the Aird et al. (2013) Eq. 1 specific accretion
+        rate distribution (`Prob_lam_Aird`). Since that distribution already
+        integrates (over its full, model-valid λ range down to its implicit
+        λ_min(z)) to 1 for every black hole, active vs. inactive is not a
+        separate free parameter of the model -- it is whatever fraction of
+        that probability mass lies above `loglambda_thresh`.
 
         Parameters
         ----------
-        linear_lambda_grid : array
-            The Eddington ratio at which to evaluate the probability density function
         mbh_log10 : array
-            Log10 of the black hole masses at which to evaluate the probability density function, shape should be (n_masses,)
-        delta1 : float
-            Power law slope at low Eddington ratios. Default is 0.38
-        eta_lambda : float
-            Parameter controlling the steepness of the exponential cutoff at high Eddington ratios. Default is 2.260
-        m : float
-            Slope of the mass dependence of the characteristic Eddington ratio. Default is -0.885
-        b : float
-            Intercept of the mass dependence of the characteristic Eddington ratio. Default is 6.671
+            Log10 of the black hole masses at which to evaluate the active fraction.
+        redshift : float
+            Redshift at which to evaluate the active fraction.
+        loglambda_thresh : float
+            Log10 of the Eddington ratio above which a black hole is considered active.
+        loglambda_grid : array
+            Log10 of the Eddington ratio grid used to evaluate and integrate `Prob_lam_Aird`.
+            Should extend well below `loglambda_thresh` (but not down toward the model's
+            implicit λ_min(z), where the underlying power law is no longer meaningful) and
+            up to whatever maximum λ is physically relevant.
         mth : module, optional
-            Module to use for mathematical functions. Default is None.
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
+        kwargs : optional
+            Input parameters for `Prob_lam_Aird` (gamma1, gamma2, lambda_break, A, beta, z0).
 
         Returns
         -------
-        prob : array
-            The probability density function of lambda at the given redshift, evaluated at the input log lambda values. Shape is (n_masses, n_loglambda_grid)
+        factive : array
+            P(lambda > 10**loglambda_thresh | M_BH, z), shape matching `mbh_log10`.
         """
         if mth is None:
             import numpy as mth
 
-        lambda_star = 10**(mbh_log10 * m + b)  # Default single value is 10**-1.338
+        plam = self.Prob_lam_Aird(loglambda_grid, mbh_log10, redshift, mth=mth, **kwargs)
 
-        ratio = linear_lambda_grid / lambda_star[..., mth.newaxis]
+        mask = loglambda_grid >= loglambda_thresh
+        grid = loglambda_grid[mask]
+        p = plam[..., mask]
 
-        plam = 1 / (ratio**delta1 * (1 + ratio**eta_lambda))
+        dlam = grid[1:] - grid[:-1]
+        return mth.sum(0.5 * dlam * (p[..., 1:] + p[..., :-1]), axis=-1)
 
-        # plam = mth.where(linear_lambda_grid < 0.0001, 1e-100, plam)
-        dloglam = linear_lambda_grid[1] - linear_lambda_grid[0]
-        norm = mth.sum(plam, axis=-1, keepdims=True) * dloglam
-        # norm = mth.sum(1/2 * (plam[...,1:] + plam[...,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=-1, keepdims=True)
-        return plam / norm
-    
+    def Prob_lam_Aird_Active(self, loglambda_grid, mbh_log10, loglambda_thresh=0.0, gamma1=-0.65, gamma2=-2.1, lambda_break=0.0, mth=None):
+        """
+        Shape-only variant of the `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_ Eq. 1 specific accretion rate distribution, renormalized to a unit-integral PDF over the active population only (λ > 10**loglambda_thresh).
+
+        Parameters
+        ----------
+        loglambda_grid : array
+            Log10 of the Eddington ratio at which to evaluate the probability density function.
+        mbh_log10 : array
+            Log10 of the black hole masses at which to evaluate the probability density function.
+        loglambda_thresh : float, optional
+            Log10 of the Eddington ratio above which a black hole is considered active.
+            Default is 0.0 (the Eddington limit, matching the default `lambda_break`).
+        gamma1 : float, optional
+            Slope below `lambda_break`. Default is -0.65.
+        gamma2 : float, optional
+            Slope above `lambda_break`. Default is -2.1.
+        lambda_break : float, optional
+            Knee of the underlying power law, in log10 lambda. Default is 0.0.
+        mth : module, optional
+            Module to use for mathematical functions. Default is None which sets mth = numpy.
+
+        Returns
+        -------
+        prob : array
+            Probability density of log lambda among active black holes, normalized
+            to unit integral over λ > 10**loglambda_thresh. Shape is (n_masses, n_loglambda_grid).
+        """
+        if mth is None:
+            import numpy as mth
+
+        linear_lambda_grid = 10**loglambda_grid[mth.newaxis, :]
+        ones = mth.ones_like(mbh_log10)[..., mth.newaxis]
+
+        p_low = linear_lambda_grid**gamma1
+        p_hi = linear_lambda_grid**gamma2
+        raw_shape = mth.where(loglambda_grid[mth.newaxis, :] < lambda_break, p_low, p_hi)
+
+        active_mask = (loglambda_grid >= loglambda_thresh)[mth.newaxis, :]
+        raw_shape = mth.where(active_mask, raw_shape, 0.0)
+
+        shape = raw_shape * ones  # broadcasts to (n_masses, n_loglambda_grid), matching Prob_lam_Aird
+
+        norm = mth.sum(1/2 * (shape[..., 1:] + shape[..., :-1]) * (loglambda_grid[1:] - loglambda_grid[:-1]), axis=-1, keepdims=True)
+        return shape / norm
+
     def Prob_lam_Three(self, linear_lambda_grid, mbh_log10, alpha=1, beta=-0.65, gamma=-2.1, lam1=10**-4, lam2=10**0, mth=None):
         """
         Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
@@ -1047,8 +1069,8 @@ class Model_Info(object):
 
         Parameters
         ----------
-        loglambda_grid : array
-            Log10 of the Eddington ratio at which to evaluate the probability density function
+        linear_lambda_grid : array
+            Eddington ratio (linear, not log) at which to evaluate the probability density function
         mbh_log10 : array
             Log10 of the black hole masses at which to evaluate the probability density function, shape should be (n_masses,)
         alpha : float, optional
@@ -1086,74 +1108,7 @@ class Model_Info(object):
         norm = mth.sum(1/2 * (plam[...,1:] + plam[...,:-1]) * (linear_lambda_grid[1:] - linear_lambda_grid[:-1]), axis=-1, keepdims=True)
         return plam / norm
 
-    def Prob_lam_Inactive(self, loglambda_grid, loglam_norm=-10, sig=1, mth=None):
-        """
-        Eddington ratio distribution function for inactive black holes.
-
-        Parameters
-        ----------
-        loglambda_grid : array
-            Log10 of the Eddington ratio at which to evaluate the probability density function
-        loglam_norm : float, optional
-            Median log10 value of Eddington fraction for the inactive black holes. Default is -10
-        sig : float, optional
-            Scatter on the distribution. Default is 1
-        mth : module, optional
-            Module to use for mathematical functions. Default is None which sets mth = numpy.
-
-        Returns
-        -------
-        prob : array
-            The probability density function of log lambda at the given redshift, evaluated at the input log lambda values. Shape is (n_masses, n_loglambda_grid)
-        """
-        if mth is None:
-            import numpy as mth
-
-        if loglam_norm is None:
-            loglam_norm = -10
-        if sig is None:
-            sig = 1
-        
-        lln = mth.ones(loglambda_grid.shape[0]) * loglam_norm
-        plam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - lln[:,mth.newaxis])**2 / (2 * sig**2)))
-        
-        norm = mth.sum(1/2 * (plam[:,1:] + plam[:,:-1]) * (loglambda_grid[1:] - loglambda_grid[:-1]), axis=1, keepdims=True)
-        return plam / norm
-            
-    def Prob_lam_Fractional(self, loglambda_grid, Factive, Ploglam_active, loglam_norm=None, sig=None, mth=None):
-        """
-        Probability of loglambda with two peaks. One peak for active black holes and one peak for inactive black holes.
-        The relative contributions of each peak is determined by the active fraction.
-
-        Parameters
-        ----------
-        loglambda_grid : array
-            Log10 of the Eddington ratio at which to evaluate the probability density function
-        Factive : float or array
-            The active fraction(s)
-        Ploglam_active : array
-            The probabilitiy distribution function of active black holes
-        mth : module, optional
-            Module to use for mathematical functions. Default is None which sets mth = numpy.
-
-        Returns
-        -------
-        Plam_tot : array
-            Normalized probability density in dlog10(lambda). Shape is (n_masses, n_loglambda_grid)
-        """
-
-        if mth is None:
-            import numpy as mth
-
-        F = mth.ones_like(Ploglam_active[..., 0])*Factive
-
-        Ploglam_inactive = self.Prob_lam_Inactive(loglambda_grid, mth=mth, loglam_norm=loglam_norm, sig=sig)
-
-        Plam_tot = Ploglam_inactive * (1 - F[..., mth.newaxis]) + Ploglam_active * F[..., mth.newaxis]
-
-        return Plam_tot
-
-    def PhiM_to_PhiL_erdf(self, mbh_log10, phiM, redshift, logL_grid, lambda_grid, Pfunc='Shen', Fractional=False, facfunc='Interp', mth=None, loglam_norm=None, sig=None, **kwargs):
+    def PhiM_to_PhiL_erdf(self, mbh_log10, phiM, redshift, logL_grid, lambda_grid, Pfunc='Shen', facfunc='Interp', mth=None, **kwargs):
         """
         Convert a BH mass function into an AGN luminosity function.
 
@@ -1163,16 +1118,16 @@ class Model_Info(object):
             log10(M_BH / Msun)
         phiM : array
             Phi_BH(logM)
+        redshift : float
+            Redshift at which to evaluate the AGN luminosity function
         logL_grid : array
             log10(Lbol / erg s^-1)
         lambda_grid : array
             Eddington ratio grid, may be in log10 or linear space depending on the Pfunc used
-        Pfunc : str or float
-            Function to use for the ERDF, options are 'Shen' and 'Aird'. Default is 'Shen'.
-        Fractional : bool, optional
-            Flag for how to use the active fraction. Default is False.
+        Pfunc : str, optional
+            Function to use for the ERDF, options are 'Shen', 'Aird', 'Aird_Active', and 'Three'. Default is 'Shen'.
         facfunc : str or int, optional
-            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Quad', 'Cube' 'Interp', and 'Interp_low'. Default is 'Interp'.
+            Which functional form to use for calculating AGN fraction, options are 'Zou', 'Cube', 'Interp', and 'Interp_low'. Default is 'Interp'.
         mth : module, optional
             Module to use for mathematical functions. Default is None which sets mth = numpy.
         kwargs : optional
@@ -1191,20 +1146,17 @@ class Model_Info(object):
 
         n_lambda = lambda_grid.shape[0]
 
-        if Pfunc in ('Three', 'Ananna'):
+        if Pfunc in ('Three'):
             loglambda_grid_for_mass = mth.log10(lambda_grid)
         else:
             loglambda_grid_for_mass = lambda_grid
 
-        logM_edd = logL_grid[:, mth.newaxis] - loglambda_grid_for_mass[mth.newaxis, :] - mth.log10(C_edd)  # (n_L, n_lambda)
+        logM_edd = logL_grid[:, mth.newaxis] - loglambda_grid_for_mass[mth.newaxis, :] - mth.log10(C_edd)
 
-        phiM_interp = mth.interp(logM_edd, mbh_log10, phiM)  # (n_L, n_lambda)
+        phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=1e-60)
 
         if facfunc == 'Zou':
-            Factive = self.facfunc_zou(mbh_log10=logM_edd, redshift=redshift)  # (n_L, n_lambda)
-
-        elif facfunc == 'Quad':
-            Factive = self.facfunc_quad(redshift=redshift)
+            Factive = self.facfunc_zou(mbh_log10=logM_edd, redshift=redshift)
 
         elif facfunc == 'Cube':
             Factive = self.facfunc_cube(redshift=redshift)
@@ -1223,26 +1175,21 @@ class Model_Info(object):
 
         elif Pfunc == 'Aird':
             Ploglam = self.Prob_lam_Aird(loglambda_grid=lambda_grid, mbh_log10=logM_edd, redshift=redshift, mth=mth, **kwargs)
+            Factive = 1  # Aird et al. (2013) Eq. 1 is already normalized to incorporate active and inactive SMBHs
 
-        elif Pfunc == 'Ananna':
-            Ploglam = self.Prob_lam_Ananna(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, mth=mth, **kwargs)
+        elif Pfunc == 'Aird_Active':
+            Ploglam = self.Prob_lam_Aird_Active(loglambda_grid=lambda_grid, mbh_log10=logM_edd, mth=mth, **kwargs)
 
         elif Pfunc == 'Three':
             Ploglam = self.Prob_lam_Three(linear_lambda_grid=lambda_grid, mbh_log10=logM_edd, mth=mth, **kwargs)
 
-        if Fractional == True:
-            if facfunc == 'Zou':
-                raise TypeError("Cannot use fractional Ploglam with Zou Factive yet. Please choose another Factive function.")
-            Ploglam = self.Prob_lam_Fractional(lambda_grid, Factive=Factive, Ploglam_active=Ploglam, mth=mth, loglam_norm=loglam_norm, sig=sig)
-            Factive = 1  # This avoids double counting Factive in the integral below
-        elif facfunc == 'Zou':
-            Factive = Factive[:, mth.newaxis, :]
+        diag_mask = mth.eye(n_lambda)[mth.newaxis, :, :]
+        Ploglam_diag = mth.sum(Ploglam * diag_mask, axis=2)
 
-        y = phiM_interp[:, mth.newaxis, :] * Ploglam * Factive
+        integrand = phiM_interp * Ploglam_diag * Factive
 
         dlam = lambda_grid[1:] - lambda_grid[:-1]
 
-        phiL = mth.sum(0.5 * dlam[mth.newaxis, :, mth.newaxis] * (y[:, 1:, :] + y[:, :-1, :]), axis=(1, 2)) / n_lambda
-        # phiL = mth.sum(0.5 * dlam[None, None, :] * (y[:, :, :-1] + y[:, :, 1:]), axis=(1, 2)) / n_lambda
+        phiL = mth.sum(0.5 * dlam[mth.newaxis, :] * (integrand[:, 1:] + integrand[:, :-1]), axis=1)
 
         return phiL
