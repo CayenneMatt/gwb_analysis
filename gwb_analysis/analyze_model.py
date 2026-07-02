@@ -909,8 +909,8 @@ class Model_Info(object):
             import numpy as mth
         loglam2 = mth.max([-1.9 + 0.45 * redshift, mth.log10(0.03)])
         sig = mth.max([1.03 - 0.15 * redshift, 0.6]) / mth.log(10)
-        # F = 0.38  # Type-1 only, Compton thin fraction
-        F = 0.99
+        F = 0.38  # Type-1 only?, Compton thin fraction?
+        # F = 0.99
         dlam = loglambda_grid[1] - loglambda_grid[0]
         dPt1 = (1 - F) * mth.power(10.0, loglambda_grid[mth.newaxis,:])**(1 + alpha) * mth.exp(-mth.power(10.0, loglambda_grid[mth.newaxis,:]) / lam1)
         Pt1 = mth.sum(dPt1) * dlam
@@ -922,7 +922,7 @@ class Model_Info(object):
         return (1 - F) * A[..., mth.newaxis] * (10**loglambda_grid[mth.newaxis,:])**(1 + alpha) * mth.exp(-10**loglambda_grid[mth.newaxis,:] / lam1) + F /\
         mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - loglam2)**2 / (2 * sig**2)))
 
-    def Prob_lam_Aird(self, loglambda_grid, mbh_log10, redshift, gamma1=-0.65, gamma2=-2.1, lambda_break=0.0, A=-3.15, beta=3.5, z0=0.6, mth=None):
+    def Prob_lam_Aird(self, loglambda_grid, mbh_log10, redshift, gamma1=-0.65, gamma2=-2.1, lambda_break=0.0, A=-3.15, beta=3.5, z0=0.6, include_redshift_term=True, mth=None):
         """
         Eddington ratio distribution function from `Aird et al. (2013) <https://iopscience.iop.org/article/10.1088/0004-637X/775/1/41/pdf>`_
         equation 1, has overal scatter of 0.38 dex. Individual reported uncertainties on input parameters are indicated below.
@@ -959,15 +959,19 @@ class Model_Info(object):
             import numpy as mth
 
         linear_lambda_grid = 10**loglambda_grid[mth.newaxis,:]
-        beta = beta * mth.ones_like(mbh_log10)
+        lambda_break = lambda_break * mth.ones_like(mbh_log10)
 
-        scaled_lambda_grid = linear_lambda_grid / 10**lambda_break
+        scaled_lambda_grid = linear_lambda_grid / 10**lambda_break[..., mth.newaxis]
 
         p_low = scaled_lambda_grid**gamma1
 
         p_hi = scaled_lambda_grid**gamma2
 
-        plam = 10**A * mth.where(loglambda_grid < lambda_break, p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta[..., mth.newaxis]
+        if include_redshift_term == True:
+            plam = 10**A * mth.where(loglambda_grid < lambda_break[..., mth.newaxis], p_low, p_hi) * ((1 + redshift)/(1 + z0))**beta
+
+        elif include_redshift_term == False:
+            plam = 10**A * mth.where(loglambda_grid < lambda_break[..., mth.newaxis], p_low, p_hi)
 
         return plam
 
