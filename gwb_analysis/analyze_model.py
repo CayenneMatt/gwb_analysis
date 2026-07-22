@@ -976,7 +976,7 @@ class Model_Info(object):
 
         return plam
     
-    def Prob_lam_Plaw(self, loglambda_grid, mbh_log10, gamma1=-0.65, gamma2=-2.1, lambda_break=0.0, m=-0.8858, b=6.671, mth=None):
+    def Prob_lam_Plaw(self, loglambda_grid, mbh_log10, gamma1=-0.65, gamma2=-2.1, lambda_break=0.0, m=-0.8858, b=6.671, mass_dep=False, mth=None):
         """
         Broken power law Eddington ratio distribution function, normalized probability desnity function.
 
@@ -1004,8 +1004,10 @@ class Model_Info(object):
             import numpy as mth
 
         linear_lambda_grid = 10**loglambda_grid[mth.newaxis,:]
-        # lambda_break = m * mbh_log10 + b
-        lambda_break = lambda_break * mth.ones_like(mbh_log10)
+        if mass_dep == True:
+            lambda_break = m * mbh_log10 + b
+        elif mass_dep == False:
+            lambda_break = lambda_break * mth.ones_like(mbh_log10)
 
         scaled_lambda_grid = linear_lambda_grid / 10**lambda_break[..., mth.newaxis]
 
@@ -1222,7 +1224,7 @@ class Model_Info(object):
         else:
             loglambda_grid_for_mass = lambda_grid
 
-        logM_edd = logL_grid[:, mth.newaxis] - loglambda_grid_for_mass[mth.newaxis, :] - mth.log10(C_edd)
+        logM_edd = logL_grid[:, mth.newaxis] - loglambda_grid_for_mass[mth.newaxis, :] - mth.log10(C_edd)  # Shape (n_lum, n_lambda)
 
         phiM_interp = mth.interp(logM_edd, mbh_log10, phiM, right=1e-60)
 
@@ -1262,6 +1264,8 @@ class Model_Info(object):
 
         diag_mask = mth.eye(n_lambda)[mth.newaxis, :, :]
         Ploglam_diag = mth.sum(Ploglam * diag_mask, axis=2)
+
+        # Trapezoid rule integration
 
         integrand = phiM_interp * Ploglam_diag * Factive
 
