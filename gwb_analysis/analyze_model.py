@@ -1016,7 +1016,7 @@ class Model_Info(object):
         p_hi = scaled_lambda_grid**gamma2
 
         plam = mth.where(loglambda_grid < lambda_break[..., mth.newaxis], p_low, p_hi)
-        norm = mth.sum(1/2 * (plam[...,1:] + plam[...,:-1]) * (linear_lambda_grid[...,1:] - linear_lambda_grid[...,:-1]), axis=-1, keepdims=True)
+        norm = mth.sum(1/2 * (plam[...,1:] + plam[...,:-1]) * (loglambda_grid[mth.newaxis,1:] - loglambda_grid[mth.newaxis,:-1]), axis=-1, keepdims=True)
 
         return plam/norm
 
