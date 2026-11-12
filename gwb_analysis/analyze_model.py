@@ -1,5 +1,5 @@
 """
-Class to aid in GWB model analysis
+Class to aid in GWB model analysis. Also see Matt et al. (2026 b,c)
 """
 import numpy as np
 import scipy.stats as stats
@@ -25,7 +25,7 @@ import ast
 
 import copy
 
-C_edd = (4 * np.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value # erg/s per Msun
+C_edd = (4 * np.pi * c.G * c.u * c.c / c.sigma_T).to(u.erg / u.s / u.Msun).value  # erg/s per Msun
 
 class Model_Info(object):
     """
@@ -1143,7 +1143,7 @@ class Model_Info(object):
         plam =  1 / mth.sqrt(2 * mth.pi * sig**2) * mth.exp((-(loglambda_grid[mth.newaxis,:] - lln[:,mth.newaxis])**2 / (2 * sig**2)))
 
         return plam
-            
+
     def Prob_lam_Fractional(self, loglambda_grid, Factive, Ploglam_active, loglam_norm=None, sig=None, mth=None):
         """
         Probability of loglambda with two peaks. One peak for active black holes and one peak for inactive black holes.
