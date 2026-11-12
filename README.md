@@ -2,6 +2,8 @@
 
 This library requires that you have [holodeck](https://github.com/nanograv/holodeck) installed.
 
+This code was used for the primary analysis and creation of figures in [Matt et al. (2026b)](https://ui.adsabs.harvard.edu/abs/2026ApJ..1006...63M/abstract) and [Matt et al. (2026c)](https://ui.adsabs.harvard.edu/abs/2026arXiv261028680M/abstract)
+
 This code serves two primary functions:
 
 1. Simplifying data handling for [holodeck](https://github.com/nanograv/holodeck) models and associated likelihoods
