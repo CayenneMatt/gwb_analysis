@@ -690,7 +690,9 @@ class Model_Info(object):
         # assert self.params != self.fiducial_values, "Posteriors have not been calculated yet. Run get_posteriors() before calculating error bars on the BHMF."
 
         for par in self.bhmf_dict.keys():
-            self.bhmf_dict[par] = np.array(np.random.normal(self.params[par], scale=self.params_err[par], size=ndraws))
+            # Only draw parameters with error estimates; fixed settings (e.g. model types, unit strings) are left as-is
+            if par in self.params_err:
+                self.bhmf_dict[par] = np.array(np.random.normal(self.params[par], scale=self.params_err[par], size=ndraws))
 
         phis = []
         for j in range(ndraws):
