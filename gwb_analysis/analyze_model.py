@@ -10,6 +10,7 @@ from holodeck.constants import MSOL, NWTG, KMPERSEC
 from holodeck import librarian
 
 import kalepy as kale
+import corner
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from astropy.cosmology import WMAP9 as cosmo
@@ -153,53 +154,60 @@ class Model_Info(object):
         self.params = copy.deepcopy(self.space_class.DEFAULTS)
 
         self.fiducial_values_err = {'hard_time': 3,
-                               'hard_sepa_init': 5,
-                                'hard_rchar': 3.0,
-                                'hard_gamma_outer': 0.5,
-                                'hard_gamma_inner': 0.5,
-                                'gsmf_log10_phi_one_z0': 0.028,
-                                'gsmf_log10_phi_one_z1': 0.072,
-                                'gsmf_log10_phi_one_z2': 0.031,
-                                'gsmf_log10_phi_two_z0': 0.050,
-                                'gsmf_log10_phi_two_z1': 0.070,
-                                'gsmf_log10_phi_two_z2': 0.020,
-                                'gsmf_log10_mstar_z0': 0.026,
-                                'gsmf_log10_mstar_z1': 0.045,
-                                'gsmf_log10_mstar_z2': 0.015,
-                                'gsmf_alpha_one': 0.070,
-                                'gsmf_alpha_two': 0.150,
-                                'gmr_norm0_log10': 0.0045,
-                                'gmr_normz': 0.0128,
-                                'gmr_malpha0': 0.00338,
-                                'gmr_malphaz': 0.0316,
-                                'gmr_mdelta0': 0.0202,
-                                'gmr_mdeltaz': 0.0440,
-                                'gmr_qgamma0': 0.0026,
-                                'gmr_qgammaz': 0.0021,
-                                'gmr_qgammam': 0.0013,
-                                'mmb_mamp_log10': 0.05,
-                                'mmb_plaw': 0.08,
-                                'mmb_scatter_dex': 0.05,
-                                'mmb_zplaw_amp': 0.0,
-                                'mmb_zplaw_slope': 0.0,
-                                'mmb_zplaw_scatter': 0.0,
-                                'bf_frac_lo': 0.4,
-                                'bf_frac_hi': 1.0,
-                                'bf_mstar_crit': 0.5,
-                                'bf_width_dex': 0.1}
+                                    'hard_sepa_init': 5,
+                                    'hard_rchar': 3.0,
+                                    'hard_gamma_outer': 0.5,
+                                    'hard_gamma_inner': 0.5,
+                                    'hard_outer_time'       : 0.5,
+                                    'hard_nu_inner'         : 1,
+                                    'hard_r_gw_crit_9_log10': 1,
+                                    'hard_alpha_gw_crit'    : 0.5,
+                                    'hard_beta_gw_crit'     : 0.5,
+                                    'gsmf_log10_phi_one_z0': 0.028,
+                                    'gsmf_log10_phi_one_z1': 0.072,
+                                    'gsmf_log10_phi_one_z2': 0.031,
+                                    'gsmf_log10_phi_two_z0': 0.050,
+                                    'gsmf_log10_phi_two_z1': 0.070,
+                                    'gsmf_log10_phi_two_z2': 0.020,
+                                    'gsmf_log10_mstar_z0': 0.026,
+                                    'gsmf_log10_mstar_z1': 0.045,
+                                    'gsmf_log10_mstar_z2': 0.015,
+                                    'gsmf_alpha_one': 0.070,
+                                    'gsmf_alpha_two': 0.150,
+                                    'gmr_norm0_log10': 0.0045,
+                                    'gmr_normz': 0.0128,
+                                    'gmr_malpha0': 0.00338,
+                                    'gmr_malphaz': 0.0316,
+                                    'gmr_mdelta0': 0.0202,
+                                    'gmr_mdeltaz': 0.0440,
+                                    'gmr_qgamma0': 0.0026,
+                                    'gmr_qgammaz': 0.0021,
+                                    'gmr_qgammam': 0.0013,
+                                    'mmb_mamp_log10': 0.05,
+                                    'mmb_plaw': 0.08,
+                                    'mmb_scatter_dex': 0.05,
+                                    'mmb_zplaw_amp': 0.0,
+                                    'mmb_zplaw_slope': 0.0,
+                                    'mmb_zplaw_scatter': 0.0,
+                                    'bf_frac_lo': 0.4,
+                                    'bf_frac_hi': 1.0,
+                                    'bf_mstar_crit': 0.5,
+                                    'bf_width_dex': 0.1}
         
         self.params_err = copy.deepcopy(self.fiducial_values_err)
 
         # Dictionary of plot labels associated with each parameter
+
         self.plt_labels = {'hard_time'              : r"$\tau_\mathrm{f}$",
                             'hard_sepa_init'        : r"Bin. Sep.",
                             'hard_rchar'            : r'R$_\mathrm{char}$',
-                            'hard_rchar_9'            : r'R$_\mathrm{char}$',
+                            'hard_alpha_char'       : r'$\alpha_\mathrm{char}$',
+                            'hard_rchar_9'          : r'R$_\mathrm{char}$',
                             'hard_gamma_inner'      : r"$\nu_\mathrm{inner}$",
                             'hard_gamma_outer'      : r"$\nu_\mathrm{outer}$",
                             'hard_outer_time'       : r"$\tau_\mathrm{outer}$",
                             'hard_nu_inner'         : r"$\nu_\mathrm{inner}$",
-                            'hard_r_gw_crit_9'      : r'R$_\mathrm{GW, crit}$',
+                            'hard_r_gw_crit_9_log10': r'log R$_\mathrm{GW, crit}$',
                             'hard_alpha_gw_crit'    : r"$\alpha_\mathrm{GW, crit}$",
                             'hard_beta_gw_crit'     : r"$\beta_\mathrm{GW, crit}$",
                             'gsmf_phi0_log10'       : r"$\log \phi_{*}$",
@@ -318,7 +326,7 @@ class Model_Info(object):
 
         return self
     
-    def corner_plot(self, fontsize=25, nbins=20, cmap='Blues'):
+    def corner_plot_old(self, fontsize=25, nbins=20, cmap='Blues'):
         """
         Old and slow, but tested version of corner plot, will be removed in favor of corner_plot_fast() pending appropriate testing. Creates a corner plot for all parameters in the model.
 
@@ -335,6 +343,7 @@ class Model_Info(object):
         -------
         None, the corner plot is displayed using matplotlib
         """
+        print('Warning: corner_plot_old() is deprecated and will be removed in a future version. Use corner_plot() instead.')
         npars = len(self.param_names)
         nsamp, npars = self.param_samples.shape
 
@@ -343,7 +352,8 @@ class Model_Info(object):
         valid = np.any(gwb_med > 0, axis=1)
         like = np.sum(self.ln_like[:, :self.nfreq], axis=-1)
         sort_idx = np.argsort(like)
-        ww = np.exp(like[sort_idx[valid]])
+        idx = sort_idx[valid[sort_idx]]  # Indices sorted by likelihood, with invalid samples removed
+        ww = np.exp(like[idx])
 
         colorsc = mpl.colormaps[cmap](np.linspace(0.02, 0.98, nsamp))
 
@@ -386,7 +396,7 @@ class Model_Info(object):
                 ax.set_visible(False)
                 continue
             ax.grid(True, alpha=0.25)
-            xx = self.param_samples[:, jj][sort_idx[valid]]
+            xx = self.param_samples[:, jj][idx]
 
             if jj > 0 and ii != jj:
                 ax.set_yticklabels(['' for ii in ax.get_yticks()])
@@ -399,13 +409,70 @@ class Model_Info(object):
                 ax.yaxis.set_ticks_position('right')
                 continue
 
-            yy = self.param_samples[:, ii][sort_idx[valid]]
+            yy = self.param_samples[:, ii][idx]
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
         for ax in axes[-1, :]:
             ax.tick_params(axis='x', labelrotation=45)
 
         fig.subplots_adjust(wspace=0.1, hspace=0.1);
+
+
+    def corner_plot(self, fontsize=25, nbins=20, cmap='Blues', prior=True, **kwargs):
+        """
+        Creates a likelihood-weighted corner plot for all parameters in the model using the `corner` package.
+
+        Parameters
+        ----------
+        fontsize : int, optional
+            Font size for axis labels and tick labels. Default is 25
+        nbins : int, optional
+            Number of bins to use in the histograms and contour plots. Default is 20
+        cmap : str, optional
+            Name of matplotlib colormap; its dark end sets the color of the contours and histograms. Default is 'Blues'
+        prior : bool, optional
+            Whether to overplot the unweighted (prior) distribution on the diagonal histograms. Default is True
+        kwargs :
+            additional keyword arguments to be passed to corner.corner, overriding the defaults set here
+
+        Returns
+        -------
+        fig : matplotlib figure containing the corner plot
+        """
+        nsamp, npars = self.param_samples.shape
+
+        gwb_med = np.median(self.gwb, axis=-1)
+
+        valid = np.any(gwb_med > 0, axis=1)
+        like = np.sum(self.ln_like[:, :self.nfreq], axis=-1)[valid]
+        samples = self.param_samples[valid]
+        # Subtract the max log-likelihood before exponentiating to avoid under/overflow, weights are only relative
+        ww = np.exp(like - np.max(like))
+
+        color = mpl.colors.to_hex(mpl.colormaps[cmap](0.98))
+        labels = [self.plt_labels[name] for name in self.param_names]
+        extrema = [holo.utils.minmax(samples[:, ii]) for ii in range(npars)]
+
+        corner_kwargs = dict(bins=nbins, range=extrema, labels=labels, color=color, smooth=1.5,
+                             plot_datapoints=False, fill_contours=True, max_n_ticks=3,
+                             label_kwargs=dict(fontsize=fontsize), labelpad=0.15,
+                             hist_kwargs=dict(density=True, lw=1.5, alpha=0.5))
+        corner_kwargs.update(kwargs)
+        fig = corner.corner(samples, weights=ww, **corner_kwargs)
+
+        axes = np.array(fig.axes).reshape((npars, npars))
+        for (ii, jj), ax in np.ndenumerate(axes):
+            if jj > ii:
+                continue
+            ax.tick_params(axis='both', labelsize=fontsize-5)
+            ax.grid(True, alpha=0.25)
+
+            if ii == jj and prior:
+                edges = np.linspace(*extrema[ii], corner_kwargs['bins'] + 1)
+                hh, _, _ = ax.hist(samples[:, ii], histtype='step', bins=edges, alpha=0.5, density=True, color='k', ls='--')
+                ax.set_ylim(0, max(ax.get_ylim()[1], 1.1*np.max(hh)))
+
+        # return fig
 
 
     def corner_plot_fast(self, nbins=20, cmap='Blues'):
@@ -432,7 +499,8 @@ class Model_Info(object):
         valid = np.any(gwb_med > 0, axis=1)
         like = np.sum(self.ln_like[:, :self.nfreq], axis=-1)
         sort_idx = np.argsort(like)
-        ww = np.exp(like[sort_idx[valid]])
+        idx = sort_idx[valid[sort_idx]]  # Indices sorted by likelihood, with invalid samples removed
+        ww = np.exp(like[idx])
 
         colorsc = mpl.colormaps[cmap](np.linspace(0.02, 0.98, nsamp))
 
@@ -476,7 +544,7 @@ class Model_Info(object):
         for (ii, jj), ax in axes.items():
             ax.grid(True, alpha=0.25)
 
-            xx = self.param_samples[:, jj][sort_idx[valid]]
+            xx = self.param_samples[:, jj][idx]
 
             if jj > 0 and ii != jj:
                 ax.tick_params(labelleft=False)
@@ -489,7 +557,7 @@ class Model_Info(object):
                 ax.yaxis.set_ticks_position('right')
                 continue
 
-            yy = self.param_samples[:, ii][sort_idx[valid]]
+            yy = self.param_samples[:, ii][idx]
             bins = (edges[jj], edges[ii])
             kale.contour((xx, yy), edges=bins, weights=ww, ax=ax, pad=0, smooth=1.5);
     
